@@ -106,7 +106,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         & (ldc_loggs == this_logg)
         )  #creates a mask for what?
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-    print('TESS coeffs', u1, u2)
+    # print('TESS coeffs', u1, u2)
     if (palomar_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
@@ -117,7 +117,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             & (ldc_P_loggs == this_logg_p)
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-        print('WIRC coeffs', u1_p, u2_p)
+        # print('WIRC coeffs', u1_p, u2_p)
         palomar = np.loadtxt(palomar_file)
         time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
         sigma_p = np.mean(fluxerr_p)
@@ -191,7 +191,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL + lnz_const )  # where does 600 come from?
@@ -201,7 +201,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -464,7 +464,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL + lnz_const )
@@ -474,7 +474,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -519,7 +519,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             }
 
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL_twin + lnz_const )
@@ -529,7 +529,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar_twin + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -799,7 +799,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -811,7 +811,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1167,7 +1167,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -1179,7 +1179,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1223,7 +1223,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             'lnZ': lnZ
             }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -1235,7 +1235,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -1518,7 +1518,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -1530,7 +1530,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1897,7 +1897,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -1909,7 +1909,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1953,7 +1953,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             'lnZ': lnZ
             }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -1965,7 +1965,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -2219,7 +2219,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -2231,7 +2231,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -2568,7 +2568,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -2580,7 +2580,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -2624,7 +2624,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             'lnZ': lnZ
             }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -2636,7 +2636,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -2904,7 +2904,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -2916,7 +2916,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -3319,7 +3319,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -3331,7 +3331,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -3375,7 +3375,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             'lnZ': lnZ
             }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(
         np.nan_to_num(
@@ -3387,7 +3387,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     if (palomar_file != None):
         idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + 600 )  # where does 600 come from?
+            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -3599,7 +3599,7 @@ def lnZ_NTP_unknown(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL+600)
@@ -3859,7 +3859,7 @@ def lnZ_NEB_unknown(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL+600)
@@ -3883,7 +3883,7 @@ def lnZ_NEB_unknown(time: np.ndarray, flux: np.ndarray, sigma: float,
         'lnZ': lnZ
     }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL_twin+600)
@@ -4023,7 +4023,7 @@ def lnZ_NTP_evolved(time: np.ndarray, flux: np.ndarray, sigma: float,
                     exptime=exptime, nsamples=nsamples
                     )
 
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL+600)
@@ -4217,7 +4217,7 @@ def lnZ_NEB_evolved(time: np.ndarray, flux: np.ndarray, sigma: float,
                     )
 
     # results for q < 0.95
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL + 600)
@@ -4241,7 +4241,7 @@ def lnZ_NEB_evolved(time: np.ndarray, flux: np.ndarray, sigma: float,
         'lnZ': lnZ
     }
     # results for q >= 0.95 and 2xP_orb
-    N_samples = 100
+    N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
     Z = np.mean(np.nan_to_num(
         np.exp(lnL_twin+600)

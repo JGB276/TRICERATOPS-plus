@@ -914,6 +914,10 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
+                        PTP_Tmag_comp_flux_ratio = res["fluxratio_comp"]
+                        PTP_Tcomps = res["T_comp"]
+                        PTP_mcomps = res["M_comp"]
+                        PTP_rcomps = res["R_comp"]
                         if (palomar_file != None):
                             best_u1_p[j] = res["u1_p"][0]
                             best_u2_p[j] = res["u2_p"][0]
@@ -1181,6 +1185,8 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
+                        DTP_Tcomps = res["T_comp"]
+                        DTP_Tmag_comp_flux_ratio = res["fluxratio_comp"]
                         if (palomar_file != None):
                             best_u1_p[j] = res["u1_p"][0]
                             best_u2_p[j] = res["u2_p"][0]
@@ -1518,8 +1524,9 @@ class target:
                 "flux_ratio_comp_T": best_fluxratio_comp,
                 "flux_ratio_comp_J": best_fluxratio_comp_p,
                 "prob": relative_probs,
-                "prob_p": relative_probs_p
-                })
+                "prob_p": relative_probs_p,
+                "lnZ": lnZ,
+                "lnZ_p": lnZ_p})
         else:
             prob_df = DataFrame({
                 "ID": targets,
@@ -1538,7 +1545,8 @@ class target:
                 "R_comp": best_R_comp, # not provided by Trilegal
                 "T_comp": best_T_comp,
                 "flux_ratio_comp_T": best_fluxratio_comp,
-                "prob": relative_probs
+                "prob": relative_probs,
+                "lnZ": lnZ
                 })
         self.probs = prob_df
         self.star_num = star_num
@@ -1546,6 +1554,13 @@ class target:
         self.u2 = best_u2
         self.fluxratio_EB = best_fluxratio_EB
         self.fluxratio_comp = best_fluxratio_comp
+        # for PTP and DTP scenarios
+        self.PTP_Tmag_comp_flux_ratio = PTP_Tmag_comp_flux_ratio
+        self.PTP_Tcomps = PTP_Tcomps # for PTP scenario
+        self.PTP_mcomps = PTP_mcomps
+        self.PTP_rcomps = PTP_rcomps
+        self.DTP_Tcomps = DTP_Tcomps # for DTP scenario
+        self.DTP_Tmag_comp_flux_ratio = DTP_Tmag_comp_flux_ratio
         if (palomar_file != None):
             self.u1_p = best_u1_p
             self.u2_p = best_u2_p
