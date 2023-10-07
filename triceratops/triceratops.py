@@ -706,7 +706,7 @@ class target:
             Hmag = filtered_stars["Hmag"].values[i]
             Kmag = filtered_stars["Kmag"].values[i]
             plx = filtered_stars["plx"].values[i]
-            Z = Z_star
+            Z = Z_star # if known Z will get updated
             ra = filtered_stars["ra"].values[i]
             dec = filtered_stars["dec"].values[i]
 
