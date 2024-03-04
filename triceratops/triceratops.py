@@ -1718,37 +1718,37 @@ class target:
                     ax[i, j].set_xlim(x_range[0], x_range[1])
                 if y_range:
                     ax[i, j].set_ylim(y_range[0], y_range[1])
-                #ax[i, j].annotate(
-                #    str(df["ID"].values[k]), xy=(0.05, 0.92),
-                #    xycoords="axes fraction", fontsize=12
-                #    )
-                #ax[i, j].annotate(
-                #    str(df["scenario"].values[k]), xy=(0.05, 0.05),
-                #    xycoords="axes fraction", fontsize=12
-                #    )
+                ax[i, j].annotate(
+                    str(df["ID"].values[k]), xy=(0.05, 0.92),
+                    xycoords="axes fraction", fontsize=12
+                    )
+                ax[i, j].annotate(
+                    str(df["scenario"].values[k]), xy=(0.05, 0.05),
+                    xycoords="axes fraction", fontsize=12
+                    )
         # comment the first three
-        ax[0, 0].set_xlabel(
+        # ax[0, 0].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
+        # ax[0, 1].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
+        # ax[0, 2].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
+        # if (nrows == 2):
+        #     f.delaxes(ax[1,0])
+        #     f.delaxes(ax[1,1])
+        #     f.delaxes(ax[1,2])
+        ax[len(df)//3-1, 0].set_xlabel(
             "days from transit center", fontsize=12
             )
-        ax[0, 1].set_xlabel(
+        ax[len(df)//3-1, 1].set_xlabel(
             "days from transit center", fontsize=12
             )
-        ax[0, 2].set_xlabel(
+        ax[len(df)//3-1, 2].set_xlabel(
             "days from transit center", fontsize=12
             )
-        if (nrows == 2):
-            f.delaxes(ax[1,0])
-            f.delaxes(ax[1,1])
-            f.delaxes(ax[1,2])
-        #ax[len(df)//3-1, 0].set_xlabel(
-        #    "days from transit center", fontsize=12
-        #    )
-        #ax[len(df)//3-1, 1].set_xlabel(
-        #    "days from transit center", fontsize=12
-        #    )
-        #ax[len(df)//3-1, 2].set_xlabel(
-        #    "days from transit center", fontsize=12
-        #    )
         if save is False:
             plt.tight_layout()
             plt.show()
@@ -1913,6 +1913,16 @@ class target:
                     ax[i, j].set_xlim(x_range[0], x_range[1])
                 if y_range:
                     ax[i, j].set_ylim(y_range[0], y_range[1])
+
+        ax[len(df)//3-1, 0].set_xlabel(
+            "days from transit center", fontsize=12
+            )
+        ax[len(df)//3-1, 1].set_xlabel(
+            "days from transit center", fontsize=12
+            )
+        ax[len(df)//3-1, 2].set_xlabel(
+            "days from transit center", fontsize=12
+            )
         # comment the first three
         #ax[0, 0].set_xlabel(
         #    "days from transit center", fontsize=12
@@ -1924,19 +1934,20 @@ class target:
         #    "days from transit center", fontsize=12
         #    )
 
-        if (nrows == 2):
-            f.delaxes(ax[1,0])
-            f.delaxes(ax[1,1])
-            f.delaxes(ax[1,2])
-        ax[4, 0].set_xlabel(
-            "days from transit center", fontsize=12
-            )
-        ax[4, 1].set_xlabel(
-            "days from transit center", fontsize=12
-            )
-        ax[4, 2].set_xlabel(
-            "days from transit center", fontsize=12
-            )
+        # if (nrows == 2):
+        #     f.delaxes(ax[1,0])
+        #     f.delaxes(ax[1,1])
+        #     f.delaxes(ax[1,2])
+
+        # ax[4, 0].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
+        # ax[4, 1].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
+        # ax[4, 2].set_xlabel(
+        #     "days from transit center", fontsize=12
+        #     )
         if save is False:
             plt.tight_layout()
             plt.show()
