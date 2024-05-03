@@ -1419,13 +1419,13 @@ class target:
                         "Calculating NTP, NEB, and NEB2xP scenario "
                         + "probabilities for " + str(ID) + "."
                         )
-
+                
                 res = lnZ_TTP(
                     time, flux, flux_err, P_orb,
                     M_s, R_s, Teff, Z,
                     N, parallel, self.mission,
                     flatpriors,
-                    exptime, nsamples
+                    exptime, nsamples, None, lnz_const
                     )
                 j = 15 + 3*(i-1)
                 targets[j] = ID
@@ -1452,7 +1452,7 @@ class target:
                     M_s, R_s, Teff, Z,
                     N, parallel, self.mission,
                     flatpriors,
-                    exptime, nsamples
+                    exptime, nsamples, None, lnz_const
                     )
                 j = 16 + 3*(i-1)
                 targets[j] = ID
@@ -1555,12 +1555,14 @@ class target:
         self.fluxratio_EB = best_fluxratio_EB
         self.fluxratio_comp = best_fluxratio_comp
         # for PTP and DTP scenarios
-        self.PTP_Tmag_comp_flux_ratio = PTP_Tmag_comp_flux_ratio
-        self.PTP_Tcomps = PTP_Tcomps # for PTP scenario
-        self.PTP_mcomps = PTP_mcomps
-        self.PTP_rcomps = PTP_rcomps
-        self.DTP_Tcomps = DTP_Tcomps # for DTP scenario
-        self.DTP_Tmag_comp_flux_ratio = DTP_Tmag_comp_flux_ratio
+        if "PTP" not in drop_scenario:
+            self.PTP_Tmag_comp_flux_ratio = PTP_Tmag_comp_flux_ratio
+            self.PTP_Tcomps = PTP_Tcomps # for PTP scenario
+            self.PTP_mcomps = PTP_mcomps
+            self.PTP_rcomps = PTP_rcomps
+        if "DTP" not in drop_scenario:
+            self.DTP_Tcomps = DTP_Tcomps # for DTP scenario
+            self.DTP_Tmag_comp_flux_ratio = DTP_Tmag_comp_flux_ratio
         if (palomar_file != None):
             self.u1_p = best_u1_p
             self.u2_p = best_u2_p
@@ -1958,4 +1960,204 @@ class target:
         else:
             plt.tight_layout()
             plt.savefig(fname+".pdf")
+        return
+
+    def plot_fits_joint(self, x_range: list = [],
+                          y_range: list = [], nrows: int = 5, palomar_file: str = None,
+                          save: bool = False, fname: str = None):
+        """Visualize best-fit for each scenarios.
+
+        Plots light curve for best-fit instance of each scenario.
+
+        Args:
+            time (numpy array): Time of each data point
+                [days from transit midpoint].
+            flux_0 (numpy array): Normalized flux of each data point.
+            flux_err_0 (float): Uncertainty of flux.
+            save (bool): Whether or not to save plot as pdf.
+            fname (str): File name of pdf.
+        """
+        palomar = np.loadtxt(palomar_file)
+        time_p, flux_p, flux_err_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        flux_err_0 = np.mean(flux_err_p)
+
+        scenario_idx = self.probs[self.probs["ID"] != 0].index.values
+        df = self.probs[self.probs["ID"] != 0]
+        star_num = self.star_num[self.probs["ID"] != 0]
+        u1s = self.u1_p[self.probs["ID"] != 0]
+        u2s = self.u2_p[self.probs["ID"] != 0]
+        fluxratios_EB = self.fluxratio_EB_p[self.probs["ID"] != 0]
+        fluxratios_comp = self.fluxratio_comp_p[self.probs["ID"] != 0]
+        # for plotting the curves in the TESS plots
+        fluxratios_EB_tess = self.fluxratio_EB[self.probs["ID"] != 0]
+        fluxratios_comp_tess = self.fluxratio_comp[self.probs["ID"] != 0]
+
+        if len(x_range) == 0:
+            model_time = np.linspace(min(time), max(time), 100)
+        else:
+            model_time = np.linspace(x_range[0], x_range[1], 100)
+
+        f, ax = plt.subplots(
+            nrows, 3, figsize=(12, 5*4), sharex=False # change to True
+            )
+        for i in range(nrows):
+            for j in range(3):
+                if i == 0:
+                    k = j
+                else:
+                    k = 3*i+j
+                # subtract flux from other stars in the aperture
+                #idx = np.argwhere(
+                #    self.stars["ID"].values == str(df["ID"].values[k])
+                #    )[0, 0]
+                #flux, flux_err = renorm_flux(
+                #    flux_0, flux_err_0, self.stars["fluxratio"].values[idx]
+                #    )
+                # all TPs
+                if j == 0:
+                    if star_num[k] == 1:
+                        comp = False
+                    else:
+                        comp = True
+                    a = (
+                        (G*df["M_s"].values[k]*Msun)/(4*pi**2)
+                        * (df['P_orb'].values[k]*86400)**2
+                        )**(1/3)
+                    u1, u2 = u1s[k], u2s[k]
+                    # if scenario was not skipped, calculate best-fit lc
+                    if df["M_s"].values[k] != 0.0:
+                        best_model = simulate_TP_transit(
+                            model_time,
+                            df['R_p'].values[k], df['P_orb'].values[k],
+                            df['inc'].values[k], a, df["R_s"].values[k],
+                            u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp[k], comp
+                            )
+                        best_model_tess = simulate_TP_transit(
+                            model_time,
+                            df['R_p'].values[k], df['P_orb'].values[k],
+                            df['inc'].values[k], a, df["R_s"].values[k],
+                            u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp_tess[k], comp
+                            )
+                    else:
+                        best_model = np.ones(len(model_time))
+                        best_model_tess = np.ones(len(model_time))
+                # all small EBs
+                elif j == 1:
+                    if star_num[k] == 1:
+                        comp = False
+                    else:
+                        comp = True
+                    mass = df["M_s"].values[k] + df["M_EB"].values[k]
+                    a = (
+                        (G*mass*Msun)/(4*pi**2)
+                        * (df['P_orb'].values[k]*86400)**2
+                        )**(1/3)
+                    u1, u2 = u1s[k], u2s[k]
+                    # if scenario was not skipped, calculate best-fit lc
+                    if df["M_s"].values[k] != 0.0:
+                        best_model = simulate_EB_transit(
+                            model_time,
+                            df["R_EB"].values[k], fluxratios_EB[k],
+                            df['P_orb'].values[k], df['inc'].values[k],
+                            a, df["R_s"].values[k], u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp[k], comp
+                            )[0]
+                        best_model_tess = simulate_EB_transit(
+                            model_time,
+                            df["R_EB"].values[k], fluxratios_EB_tess[k],
+                            df['P_orb'].values[k], df['inc'].values[k],
+                            a, df["R_s"].values[k], u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp_tess[k], comp
+                            )[0]
+                    else:
+                        best_model = np.ones(len(model_time))
+                        best_model_tess = np.ones(len(model_time))
+                # all twin EBs
+                elif j == 2:
+                    if star_num[k] == 1:
+                        comp = False
+                    else:
+                        comp = True
+                    mass = df["M_s"].values[k] + df["M_EB"].values[k]
+                    a = (
+                        (G*mass*Msun)/(4*pi**2)
+                        * (df['P_orb'].values[k]*86400)**2
+                        )**(1/3)
+                    u1, u2 = u1s[k], u2s[k]
+                    # if scenario was not skipped, calculate best-fit lc
+                    if df["M_s"].values[k] != 0.0:
+                        best_model = simulate_EB_transit(
+                            model_time,
+                            df["R_EB"].values[k], fluxratios_EB[k],
+                            df['P_orb'].values[k], df['inc'].values[k],
+                            a, df["R_s"].values[k], u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp[k], comp
+                            )[0]
+                        best_model_tess = simulate_EB_transit(
+                            model_time,
+                            df["R_EB"].values[k], fluxratios_EB_tess[k],
+                            df['P_orb'].values[k], df['inc'].values[k],
+                            a, df["R_s"].values[k], u1, u2,
+                            df["ecc"].values[k], df["w"].values[k],
+                            fluxratios_comp_tess[k], comp
+                            )[0]
+                    else:
+                        best_model = np.ones(len(model_time))
+                        best_model_tess = np.ones(len(model_time))
+
+                y_formatter = ticker.ScalarFormatter(useOffset=False)
+                ax[i, j].yaxis.set_major_formatter(y_formatter)
+                ax[i, j].errorbar(
+                    time_p, flux_p, flux_err_0, fmt="o",
+                    color="red", elinewidth=1., capsize=0,
+                    markeredgecolor="black", alpha=0.25, zorder=0,
+                    rasterized=True
+                    )
+                ax[i, j].plot(
+                    model_time, best_model, "k-", lw=3, zorder=2
+                    )
+                ax[i, j].plot(
+                    model_time, best_model_tess, "b-", lw=3, alpha=0.5, zorder=2
+                    )
+                ax[i, j].set_ylabel("normalized flux", fontsize=12)
+                ax[i, j].annotate(
+                    str(df["ID"].values[k]), xy=(0.05, 0.92),
+                    xycoords="axes fraction", fontsize=12
+                    )
+                ax[i, j].annotate(
+                    str(df["scenario"].values[k]), xy=(0.05, 0.05),
+                    xycoords="axes fraction", fontsize=12
+                    )
+                if x_range:
+                    ax[i, j].set_xlim(x_range[0], x_range[1])
+                if y_range:
+                    ax[i, j].set_ylim(y_range[0], y_range[1])
+
+        ax[len(df)//3-1, 0].set_xlabel(
+            "days from transit center", fontsize=12
+            )
+        ax[len(df)//3-1, 1].set_xlabel(
+            "days from transit center", fontsize=12
+            )
+        ax[len(df)//3-1, 2].set_xlabel(
+            "days from transit center", fontsize=12
+            )
+
+        if save is False:
+            plt.tight_layout()
+            plt.show()
+        elif (save is True) & (fname is None):
+            plt.tight_layout()
+            target_star = self.stars.ID.values[0]
+            plt.savefig("TIC"+str(target_star)+"_fits.pdf")
+        else:
+            plt.tight_layout()
+            plt.savefig(fname+"_joint.pdf")
         return
