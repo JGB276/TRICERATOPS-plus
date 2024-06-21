@@ -35,7 +35,7 @@ ldc_K_loggs = np.array(ldc_K.logg, dtype=float)
 ldc_K_u1s = np.array(ldc_K.a, dtype=float)
 ldc_K_u2s = np.array(ldc_K.b, dtype=float)
 
-# load Palomar limb darkening coefficients
+# load external_lc limb darkening coefficients
 LDC_FILE = resource_filename('triceratops', 'data/ldc_wirc.csv')
 ldc_P = read_csv(LDC_FILE)
 ldc_P_Zs = np.array(ldc_P.Z, dtype=float)
@@ -49,7 +49,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             Z: float, N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TTP scenario.
     Args:
@@ -107,7 +107,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )  #creates a mask for what?
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask] # gets the coefficients from the table for the corresponding T, logg and Z vals.
     # print('TESS coeffs', u1, u2)
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -118,12 +118,12 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
         # print('WIRC coeffs', u1_p, u2_p)
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p)) # this is technically incorrect
-        lnL_palomar = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
 
     # sample from prior distributions
     rps = sample_rp(np.random.rand(N), np.full(N, M_s), flatpriors)
@@ -164,10 +164,10 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
                     time_p, flux_p, sigma_p, rps[mask],
                     P_orb[mask], incs[mask], a_arr[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -175,7 +175,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
 
     else:
         for i in range(N):
@@ -198,10 +198,10 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         ))
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -252,7 +252,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             Z: float, N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TEB scenario.
     Args:
@@ -309,7 +309,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -319,13 +319,13 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             & (ldc_P_loggs == this_logg_p)
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
-        lnL_palomar_twin = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
+        lnL_external_lc_twin = np.full(N, -np.inf)
 
     # sample from prior distributions
     incs = sample_inc(np.random.rand(N))
@@ -343,7 +343,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         flux_relation(masses)
         / (flux_relation(masses) + flux_relation(np.array([M_s])))
         )
-    # calculate flux ratios in the J band (for Palomar)
+    # calculate flux ratios in the J band (for external_lc)
     fluxratios_J = (
         flux_relation(masses, filt = "J")
         / (flux_relation(masses, filt = "J") + flux_relation(np.array([M_s]), filt = "J"))
@@ -389,10 +389,10 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     P_orb[mask], incs[mask], a[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -400,7 +400,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
 
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
@@ -423,10 +423,10 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
+            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     2*P_orb[mask], incs[mask], a_twin[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -434,7 +434,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_fluxratio=companion_fluxratio[mask],
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL_twin = lnL_twin+lnL_palomar_twin
+            lnL_twin = lnL_twin+lnL_external_lc_twin
     else:
         for i in range(N):
             # q < 0.95
@@ -471,10 +471,10 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         ))
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -526,10 +526,10 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         ))
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc_twin + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -582,7 +582,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, palomar_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PTP scenario.
     Args:
@@ -644,7 +644,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -654,12 +654,12 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             & (ldc_P_loggs == this_logg_p)
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
 
     # sample from q prior distributions
     if molusc_file is None:
@@ -684,7 +684,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         / (flux_relation(masses_comp) + flux_relation(np.array([M_s])))
         )
 
-    # calculate flux ratios in the J band (for Palomar)
+    # calculate flux ratios in the J band (for external_lc)
     fluxratios_comp_J = (
         flux_relation(masses_comp, filt = "J")
         / (flux_relation(masses_comp, filt = "J") + flux_relation(np.array([M_s]), filt = "J"))
@@ -694,7 +694,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     if molusc_file is None:
         if contrast_curve_file is None:
             # use TESS/Vis band flux ratios
-            if (palomar_file != None):
+            if (external_lc_file != None):
                 print("Using J band flux ratios for lnprior_companion")
                 delta_mags = 2.5*np.log10(
                     fluxratios_comp_J/(1-fluxratios_comp_J)
@@ -769,10 +769,10 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
                     time_p, flux_p, sigma_p, rps[mask],
                     P_orb[mask], incs[mask], a_arr[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -781,7 +781,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
     else:
         for i in range(N):
             if Ptra[i] <= 1:
@@ -808,10 +808,10 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -870,7 +870,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, palomar_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PEB scenario.
     Args:
@@ -932,7 +932,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -943,14 +943,14 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
         #print(u1_p, u2_p)
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
         #print(exptime_p)
-        lnL_palomar = np.full(N, -np.inf)
-        lnL_palomar_twin = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
+        lnL_external_lc_twin = np.full(N, -np.inf)
 
     # sample from prior distributions
     incs = sample_inc(np.random.rand(N))
@@ -980,7 +980,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         / (flux_relation(masses) + flux_relation(np.array([M_s])))
         )
 
-    # calculate flux ratios in the J band (for Palomar)
+    # calculate flux ratios in the J band (for external_lc)
     fluxratios_J = (
         flux_relation(masses, filt = "J")
         / (flux_relation(masses, filt = "J") + flux_relation(np.array([M_s]), filt = "J"))
@@ -997,7 +997,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         / (flux_relation(masses_comp) + flux_relation(np.array([M_s])))
         )
 
-    # calculate flux ratios in the J band (for Palomar)
+    # calculate flux ratios in the J band (for external_lc)
     fluxratios_comp_J = (
         flux_relation(masses_comp, filt = "J")
         / (flux_relation(masses_comp, filt = "J") + flux_relation(np.array([M_s]), filt = "J"))
@@ -1006,7 +1006,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     # calculate priors for companions
     if molusc_file is None:
         if contrast_curve_file is None:
-            if (palomar_file != None):
+            if (external_lc_file != None):
                 print("Using J band flux ratios for lnprior_companion")
                 delta_mags = 2.5*np.log10(
                     fluxratios_comp_J/(1-fluxratios_comp_J)
@@ -1084,10 +1084,10 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     P_orb[mask], incs[mask], a[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -1096,8 +1096,8 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            #print('computed palomar lnL')
-            lnL = lnL+lnL_palomar
+            #print('computed external_lc lnL')
+            lnL = lnL+lnL_external_lc
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -1120,10 +1120,10 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
+            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     2*P_orb[mask], incs[mask], a_twin[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -1132,7 +1132,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL_twin = lnL_twin+lnL_palomar_twin
+            lnL_twin = lnL_twin+lnL_external_lc_twin
     else:
         for i in range(N):
             # q < 0.95
@@ -1176,10 +1176,10 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1232,10 +1232,10 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -1288,7 +1288,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, palomar_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the STP scenario.
     Args:
@@ -1379,18 +1379,18 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
         u1s_at_Z = np.array(ldc_at_Z.a, dtype=float)
         u2s_at_Z = np.array(ldc_at_Z.b, dtype=float)
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
         Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
         loggs_at_Z_p = np.array(ldc_at_Z_p.logg, dtype=float)
         u1s_at_Z_p = np.array(ldc_at_Z_p.aLSM, dtype=float)
         u2s_at_Z_p = np.array(ldc_at_Z_p.bLSM, dtype=float)
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
 
 
     rounded_loggs_comp = np.round(loggs_comp/0.5) * 0.5
@@ -1400,7 +1400,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
     rounded_Teffs_comp[rounded_Teffs_comp < 3500] = 3500
     rounded_Teffs_comp[rounded_Teffs_comp > 10000] = 10000
     u1s_comp, u2s_comp = np.zeros(N), np.zeros(N)
-    u1s_comp_p, u2s_comp_p = np.zeros(N), np.zeros(N) # this is for the Palomar data
+    u1s_comp_p, u2s_comp_p = np.zeros(N), np.zeros(N) # this is for the external_lc data
 
     for i, (comp_Teff, comp_logg) in enumerate(
             zip(rounded_Teffs_comp, rounded_loggs_comp)
@@ -1408,8 +1408,8 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
         mask = (Teffs_at_Z == comp_Teff) & (loggs_at_Z == comp_logg)
         u1s_comp[i], u2s_comp[i] = u1s_at_Z[mask], u2s_at_Z[mask]
 
-    # same as above but for Palomar
-    if (palomar_file != None):
+    # same as above but for external_lc
+    if (external_lc_file != None):
         for i, (comp_Teff, comp_logg) in enumerate(
                 zip(rounded_Teffs_comp, rounded_loggs_comp)
                 ):
@@ -1419,7 +1419,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
     # calculate priors for companions
     if molusc_file is None:
         if contrast_curve_file is None:
-            if (palomar_file != None):
+            if (external_lc_file != None):
                 print("Using J band flux ratios for lnprior_companion")
                 delta_mags = 2.5*np.log10(
                     fluxratios_comp_J/(1-fluxratios_comp_J)
@@ -1489,8 +1489,8 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
+        if (external_lc_file != None):
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
                     time_p, flux_p, sigma_p, rps[mask],
                     P_orb[mask], incs[mask], a[mask], radii_comp[mask],
                     u1s_comp_p[mask], u2s_comp_p[mask],
@@ -1499,7 +1499,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
     else:
         for i in range(N):
             if Ptra[i] <= 1:
@@ -1527,10 +1527,10 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1583,7 +1583,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, palomar_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the SEB scenario.
     Args:
@@ -1678,19 +1678,19 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         u1s_at_Z = np.array(ldc_at_Z.a, dtype=float)
         u2s_at_Z = np.array(ldc_at_Z.b, dtype=float)
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
         Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
         loggs_at_Z_p = np.array(ldc_at_Z_p.logg, dtype=float)
         u1s_at_Z_p = np.array(ldc_at_Z_p.aLSM, dtype=float)
         u2s_at_Z_p = np.array(ldc_at_Z_p.bLSM, dtype=float)
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
-        lnL_palomar_twin = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
+        lnL_external_lc_twin = np.full(N, -np.inf)
 
     rounded_loggs_comp = np.round(loggs_comp/0.5) * 0.5
     rounded_loggs_comp[rounded_loggs_comp < 3.5] = 3.5
@@ -1699,7 +1699,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     rounded_Teffs_comp[rounded_Teffs_comp < 3500] = 3500
     rounded_Teffs_comp[rounded_Teffs_comp > 13000] = 13000
     u1s_comp, u2s_comp = np.zeros(N), np.zeros(N)
-    u1s_comp_p, u2s_comp_p = np.zeros(N), np.zeros(N) # this is for the Palomar data
+    u1s_comp_p, u2s_comp_p = np.zeros(N), np.zeros(N) # this is for the external_lc data
 
     for i, (comp_Teff, comp_logg) in enumerate(
             zip(rounded_Teffs_comp, rounded_loggs_comp)
@@ -1707,8 +1707,8 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         mask = (Teffs_at_Z == comp_Teff) & (loggs_at_Z == comp_logg)
         u1s_comp[i], u2s_comp[i] = u1s_at_Z[mask], u2s_at_Z[mask]
 
-    # same as above but for Palomar
-    if (palomar_file != None):
+    # same as above but for external_lc
+    if (external_lc_file != None):
         for i, (comp_Teff, comp_logg) in enumerate(
                 zip(rounded_Teffs_comp, rounded_loggs_comp)
                 ):
@@ -1732,7 +1732,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     # calculate priors for companions
     if molusc_file is None:
         if contrast_curve_file is None:
-            if (palomar_file != None):
+            if (external_lc_file != None):
                 print("Using J band flux ratios for lnprior_companion")
                 delta_mags = 2.5*np.log10(
                     (fluxratios_comp_J/(1-fluxratios_comp_J))
@@ -1819,8 +1819,8 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
+        if (external_lc_file != None):
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     P_orb[mask], incs[mask], a[mask], radii_comp[mask],
                     u1s_comp_p[mask], u2s_comp_p[mask],
@@ -1829,7 +1829,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -1849,8 +1849,8 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
+        if (external_lc_file != None):
+            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     2*P_orb[mask], incs[mask], a_twin[mask], radii_comp[mask],
                     u1s_comp_p[mask], u2s_comp_p[mask],
@@ -1859,7 +1859,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL_twin = lnL_twin+lnL_palomar_twin
+            lnL_twin = lnL_twin+lnL_external_lc_twin
     else:
         for i in range(N):
             # q < 0.95
@@ -1906,10 +1906,10 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -1962,10 +1962,10 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -2019,7 +2019,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DTP scenario.
     Args:
@@ -2085,7 +2085,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -2095,12 +2095,12 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             & (ldc_P_loggs == this_logg_p)
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
 
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
@@ -2119,7 +2119,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # calculate priors for companions
     if contrast_curve_file is None:
-        if (palomar_file != None):
+        if (external_lc_file != None):
             print("Using J band flux ratios for lnprior_companion")
             delta_mags = 2.5*np.log10(
                 fluxratios_comp_J[idxs]/(1-fluxratios_comp_J[idxs])
@@ -2190,10 +2190,10 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
                     time_p, flux_p, sigma_p, rps[mask],
                     P_orb[mask], incs[mask], a_arr[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -2202,7 +2202,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
     else:
         for i in range(N):
             if Ptra[i] <= 1:
@@ -2228,10 +2228,10 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -2291,7 +2291,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DEB scenario.
     Args:
@@ -2357,7 +2357,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -2367,13 +2367,13 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             & (ldc_P_loggs == this_logg_p)
             )
         u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
-        lnL_palomar_twin = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
+        lnL_external_lc_twin = np.full(N, -np.inf)
 
     # sample from inc and q prior distributions
     incs = sample_inc(np.random.rand(N))
@@ -2415,7 +2415,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # calculate priors for companions
     if contrast_curve_file is None:
-        if (palomar_file != None):
+        if (external_lc_file != None):
             print("Using J band flux ratios for lnprior_companion")
             delta_mags = 2.5*np.log10(
                 fluxratios_comp_J[idxs]/(1-fluxratios_comp_J[idxs])
@@ -2488,10 +2488,10 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     P_orb[mask], incs[mask], a[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -2500,7 +2500,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -2522,10 +2522,10 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
+        if (external_lc_file != None):
             u1_arr_p = np.full(N, u1_p)
             u2_arr_p = np.full(N, u2_p)
-            lnL_palomar_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
+            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     2*P_orb[mask], incs[mask], a_twin[mask], R_s_arr[mask],
                     u1_arr_p[mask], u2_arr_p[mask],
@@ -2534,7 +2534,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL_twin = lnL_twin+lnL_palomar_twin
+            lnL_twin = lnL_twin+lnL_external_lc_twin
     else:
         for i in range(N):
             # q < 0.95
@@ -2577,10 +2577,10 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -2633,10 +2633,10 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
@@ -2690,7 +2690,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BTP scenario.
     Args:
@@ -2758,7 +2758,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         ldc_u2s = ldc_K_u2s
 
     u1s_comp, u2s_comp = np.zeros(N_comp), np.zeros(N_comp)
-    u1s_comp_p, u2s_comp_p = np.zeros(N_comp), np.zeros(N_comp) # this is for the Palomar data
+    u1s_comp_p, u2s_comp_p = np.zeros(N_comp), np.zeros(N_comp) # this is for the external_lc data
 
     for i in range(N_comp):
         this_Teff = ldc_Teffs[np.argmin(np.abs(ldc_Teffs-Teffs_comp[i]))]
@@ -2773,15 +2773,15 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             )
         u1s_comp[i], u2s_comp[i] = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+    if (external_lc_file != None):
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         for i in range(N_comp):
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teffs_comp[i]))]
             this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-loggs_comp[i]))]
@@ -2801,7 +2801,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # calculate priors for companions
     if contrast_curve_file is None:
-        if (palomar_file != None):
+        if (external_lc_file != None):
             print("Using J band flux ratios for lnprior_companion")
             delta_mags = 2.5*np.log10(
                 fluxratios_comp_J[idxs]/(1-fluxratios_comp_J[idxs])
@@ -2875,8 +2875,8 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
+        if (external_lc_file != None):
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
                     time_p, flux_p, sigma_p, rps[mask],
                     P_orb[mask], incs[mask], a[mask], radii_comp[idxs[mask]],
                     u1s_comp_p[idxs[mask]], u2s_comp_p[idxs[mask]],
@@ -2885,7 +2885,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
     else:
         for i in range(N):
             if Ptra[i] <= 1:
@@ -2913,10 +2913,10 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -2970,7 +2970,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            palomar_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BEB scenario.
     Args:
@@ -3067,16 +3067,16 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             )
         u1s_comp[i], u2s_comp[i] = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (palomar_file != None):
-        palomar = np.loadtxt(palomar_file)
-        time_p, flux_p, fluxerr_p = palomar[:,0], palomar[:,1], palomar[:,2]
+    if (external_lc_file != None):
+        external_lc = np.loadtxt(external_lc_file)
+        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
         sigma_p = np.mean(fluxerr_p)
         lnsigma_p = np.log(sigma_p)
         exptime_p = np.min(np.diff(time_p))
-        lnL_palomar = np.full(N, -np.inf)
-        lnL_palomar_twin = np.full(N, -np.inf)
+        lnL_external_lc = np.full(N, -np.inf)
+        lnL_external_lc_twin = np.full(N, -np.inf)
 
-    if (palomar_file != None):
+    if (external_lc_file != None):
         for i in range(N_comp):
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teffs_comp[i]))]
             this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-loggs_comp[i]))]
@@ -3113,7 +3113,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         * distance_correction
         )
 
-    # calculate EB flux ratios in the J band (for PAlomar)
+    # calculate EB flux ratios in the J band (for external_lc)
     fluxratios_comp_bound_J = (
         flux_relation(masses_comp[idxs], filt="J")
         / (
@@ -3154,7 +3154,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # calculate priors for companions
     if contrast_curve_file is None:
-        if (palomar_file != None):
+        if (external_lc_file != None):
             print("Using J band flux ratios for lnprior_companion")
             delta_mags = 2.5*np.log10(
                 (fluxratios_comp_J[idxs]/(1-fluxratios_comp_J[idxs]))
@@ -3233,8 +3233,8 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
+        if (external_lc_file != None):
+            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     P_orb[mask], incs[mask], a[mask], radii_comp[idxs[mask]],
                     u1s_comp_p[idxs[mask]], u2s_comp_p[idxs[mask]],
@@ -3243,7 +3243,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL = lnL+lnL_palomar
+            lnL = lnL+lnL_external_lc
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -3268,8 +3268,8 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (palomar_file != None):
-            lnL_palomar_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
+        if (external_lc_file != None):
+            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
                     time_p, flux_p, sigma_p, radii[mask], fluxratios_J[mask],
                     2*P_orb[mask], incs[mask], a_twin[mask], radii_comp[idxs[mask]],
                     u1s_comp_p[idxs[mask]], u2s_comp_p[idxs[mask]],
@@ -3278,7 +3278,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=True,
                     exptime=exptime_p, nsamples=nsamples
                     )
-            lnL_twin = lnL_twin + lnL_palomar_twin
+            lnL_twin = lnL_twin + lnL_external_lc_twin
     else:
         for i in range(N):
             # q < 0.95
@@ -3328,10 +3328,10 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res = {
@@ -3384,10 +3384,10 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (palomar_file != None):
-        idx_p = (-lnL_palomar_twin).argsort()[:N_samples]
+    if (external_lc_file != None):
+        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
         Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_palomar_twin + lnprior_companion + lnz_const )  # where does 600 come from?
+            np.exp(lnL_external_lc_twin + lnprior_companion + lnz_const )  # where does 600 come from?
             ))
         lnZ_p = np.log(Z_p)
         res_twin = {
