@@ -627,6 +627,7 @@ class target:
                    verbose: int = 1, flatpriors: bool = False,
                    exptime: float = 0.00139, nsamples: int = 20,
                    molusc_file: str = None, external_lc_file: str = None,
+                   filt_lc: str = "J",
                    lnz_const: int = 600, Z_star = 0.0):
         """Run to calculate FPP and NFPP.
 
@@ -655,6 +656,8 @@ class target:
             molusc_file (str): Path to MOLUSC output with stellar
                 binary properties.
             external_lc_file (str): Path to external light curve.
+            filt_lc (str): Photometric filter of external light curve. Options are
+                TESS, Vis, J, H, and K.
             lnz_const (float): Fudge factor for lnZ calculation.
             Z_star (float) = Metallicity of target star.
         """
@@ -761,7 +764,7 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples, external_lc_file,
-                            lnz_const)
+                            filt_lc, lnz_const)
                         # self.res_TTP = res
                         j = 0
                         targets[j] = ID
@@ -812,7 +815,8 @@ class target:
                             M_s, R_s, Teff, Z,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
+                            exptime, nsamples,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_TEB = res
                         j = 1
@@ -891,7 +895,8 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples,
-                            molusc_file, external_lc_file,
+                            molusc_file,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_PTP = res
                         j = 3
@@ -955,7 +960,8 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples,
-                            molusc_file, external_lc_file,
+                            molusc_file,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_PEB = res
                         j = 4
@@ -1031,7 +1037,8 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples,
-                            molusc_file, external_lc_file,
+                            molusc_file,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_STP = res
                         j = 6
@@ -1086,7 +1093,8 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples,
-                            molusc_file, external_lc_file,
+                            molusc_file,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_SEB = res
                         j = 7
@@ -1162,7 +1170,8 @@ class target:
                             contrast_curve_file, filt,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
+                            exptime, nsamples,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_DTP = res
                         j = 9
@@ -1221,7 +1230,8 @@ class target:
                             contrast_curve_file, filt,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
+                            exptime, nsamples,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_DEB = res
                         j = 10
@@ -1297,7 +1307,8 @@ class target:
                             contrast_curve_file, filt,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
+                            exptime, nsamples,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_BTP = res
                         j = 12
@@ -1352,7 +1363,8 @@ class target:
                             contrast_curve_file, filt,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
+                            exptime, nsamples,
+                            external_lc_file, filt_lc,
                             lnz_const)
                         # self.res_BEB = res
                         j = 13

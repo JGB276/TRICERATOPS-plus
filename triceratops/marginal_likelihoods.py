@@ -35,7 +35,16 @@ ldc_K_loggs = np.array(ldc_K.logg, dtype=float)
 ldc_K_u1s = np.array(ldc_K.a, dtype=float)
 ldc_K_u2s = np.array(ldc_K.b, dtype=float)
 
-# load external_lc limb darkening coefficients
+# load V band limb darkening coefficients
+LDC_FILE = resource_filename('triceratops', 'data/ldc_V.csv')
+ldc_V = read_csv(LDC_FILE)
+ldc_V_Zs = np.array(ldc_V.Z, dtype=float)
+ldc_V_Teffs = np.array(ldc_V.Teff, dtype=int)
+ldc_V_loggs = np.array(ldc_V.logg, dtype=float)
+ldc_V_u1s = np.array(ldc_V.aLSM, dtype=float)
+ldc_V_u2s = np.array(ldc_V.bLSM, dtype=float)
+
+# load J band limb darkening coefficients
 LDC_FILE = resource_filename('triceratops', 'data/ldc_wirc.csv')
 ldc_P = read_csv(LDC_FILE)
 ldc_P_Zs = np.array(ldc_P.Z, dtype=float)
@@ -44,12 +53,32 @@ ldc_P_loggs = np.array(ldc_P.logg, dtype=float)
 ldc_P_u1s = np.array(ldc_P.aLSM, dtype=float)
 ldc_P_u2s = np.array(ldc_P.bLSM, dtype=float)
 
+# load H band limb darkening coefficients
+LDC_FILE = resource_filename('triceratops', 'data/ldc_H.csv')
+ldc_H = read_csv(LDC_FILE)
+ldc_H_Zs = np.array(ldc_H.Z, dtype=float)
+ldc_H_Teffs = np.array(ldc_H.Teff, dtype=int)
+ldc_H_loggs = np.array(ldc_H.logg, dtype=float)
+ldc_H_u1s = np.array(ldc_H.aLSM, dtype=float)
+ldc_H_u2s = np.array(ldc_H.bLSM, dtype=float)
+
+# load H band limb darkening coefficients
+LDC_FILE = resource_filename('triceratops', 'data/ldc_K.csv')
+ldc_Kband = read_csv(LDC_FILE)
+ldc_Kband_Zs = np.array(ldc_Kband.Z, dtype=float)
+ldc_Kband_Teffs = np.array(ldc_Kband.Teff, dtype=int)
+ldc_Kband_loggs = np.array(ldc_Kband.logg, dtype=float)
+ldc_Kband_u1s = np.array(ldc_Kband.aLSM, dtype=float)
+ldc_HKband_u2s = np.array(ldc_Kband.bLSM, dtype=float)
+
+
 def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
             Z: float, N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TTP scenario.
     Args:
@@ -252,7 +281,8 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             Z: float, N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TEB scenario.
     Args:
@@ -582,7 +612,8 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PTP scenario.
     Args:
@@ -870,7 +901,8 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PEB scenario.
     Args:
@@ -1288,7 +1320,8 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the STP scenario.
     Args:
@@ -1583,7 +1616,8 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            molusc_file: str = None, external_lc_file: str = None, lnz_const: int = 600):
+            molusc_file: str = None, external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the SEB scenario.
     Args:
@@ -2019,7 +2053,8 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DTP scenario.
     Args:
@@ -2291,7 +2326,8 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DEB scenario.
     Args:
@@ -2690,7 +2726,8 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BTP scenario.
     Args:
@@ -2970,7 +3007,8 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None, lnz_const: int = 600):
+            external_lc_file: str = None,
+            filt_lc: str = "J", lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BEB scenario.
     Args:
