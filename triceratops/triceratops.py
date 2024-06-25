@@ -103,6 +103,7 @@ class target:
             radius=search_radius*pixel_size,
             catalog="TIC"
             )
+        tic_result = df
         new_df = df[
             "ID", "Tmag", "Jmag", "Hmag", "Kmag",
             "ra", "dec", "mass", "rad", "Teff", "plx"
@@ -235,6 +236,7 @@ class target:
         stars["sep (arcsec)"] = sep
         stars["PA (E of N)"] = pa
 
+        self.tic_result = tic_result
         self.stars = stars
         self.TESS_images = TESS_images
         self.col0s = col0s
@@ -1536,7 +1538,7 @@ class target:
                 "R_comp": best_R_comp, # not provided by Trilegal
                 "T_comp": best_T_comp,
                 "flux_ratio_comp_T": best_fluxratio_comp,
-                "flux_ratio_comp_J": best_fluxratio_comp_p,
+                f"flux_ratio_comp_{filt_lc}": best_fluxratio_comp_p,
                 "prob": relative_probs,
                 "prob_p": relative_probs_p,
                 "lnZ": lnZ,
