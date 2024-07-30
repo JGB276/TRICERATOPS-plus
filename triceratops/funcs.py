@@ -84,6 +84,46 @@ flux_spline = InterpolatedUnivariateSpline(
     Mass_nodes, flux_nodes
     )
 
+# SDSS bands
+Mass_nodes_griz = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 , 1.1, 1.2, 1.3,
+       1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0])
+
+flux_nodes_g = np.array([-3.8200759 , -3.17376328, -2.57762807, -2.02971706, -1.52807706,
+       -1.07075486, -0.65579725, -0.28125103,  0.05483701,  0.35442007,
+        0.61945136,  0.85188409,  1.05367145,  1.22676665,  1.3731229 ,
+        1.49469341,  1.59343137,  1.67129   ,  1.73022249,  1.77218206])
+
+flux_nodes_r = np.array([-3.28736473, -2.73325194, -2.22142466, -1.7502527 , -1.31810585,
+       -0.92335394, -0.56436678, -0.23951416,  0.05283409,  0.31430818,
+        0.54653828,  0.75115461,  0.92978733,  1.08406665,  1.21562276,
+        1.32608584,  1.4170861 ,  1.49025371,  1.54721887,  1.58961178])
+
+flux_nodes_i = np.array([-2.87686923, -2.4133762 , -1.98034403, -1.576768  , -1.20164339,
+       -0.85396546, -0.5327295 , -0.23693078,  0.03443542,  0.28237384,
+        0.50788918,  0.71198618,  0.89566956,  1.05994404,  1.20581436,
+        1.33428523,  1.44636137,  1.54304752,  1.6253484 ,  1.69426873])
+
+flux_nodes_z = np.array([-2.61710359, -2.20784594, -1.82230726, -1.4598318 , -1.11976382,
+       -0.80144757, -0.50422728, -0.22744722,  0.02954836,  0.26741522,
+        0.48680911,  0.68838577,  0.87280096,  1.04071042,  1.19276991,
+        1.32963517,  1.45196196,  1.56040602,  1.65562311,  1.73826897])
+
+flux_spline_g = InterpolatedUnivariateSpline(
+    Mass_nodes_griz, flux_nodes_g
+    )
+
+flux_spline_r = InterpolatedUnivariateSpline(
+    Mass_nodes_griz, flux_nodes_r
+    )
+
+flux_spline_i = InterpolatedUnivariateSpline(
+    Mass_nodes_griz, flux_nodes_i
+    )
+
+flux_spline_z = InterpolatedUnivariateSpline(
+    Mass_nodes_griz, flux_nodes_z
+    )
+
 Mass_nodes_J = np.array([
     0.1, 0.2, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3
     ])
@@ -133,6 +173,14 @@ def flux_relation(Masses: np.array, filt: str = "TESS"):
         fluxes = 10**flux_spline_H(Masses)
     if filt == "K":
         fluxes = 10**flux_spline_K(Masses)
+    if filt == "g":
+        fluxes = 10**flux_spline_g(Masses)
+    if filt == "r":
+        fluxes = 10**flux_spline_r(Masses)
+    if filt == "i":
+        fluxes = 10**flux_spline_i(Masses)
+    if filt == "z":
+        fluxes = 10**flux_spline_z(Masses)
     return fluxes
 
 
@@ -245,7 +293,7 @@ def query_TRILEGAL(RA: float, Dec: float, verbose: int = 1):
     browser["eq_alpha"] = str(RA)
     browser["eq_delta"] = str(Dec)
     browser["field"] = "0.1"
-    browser["photsys_file"] = "tab_mag_odfnew/tab_mag_TESS_2mass.dat"
+    browser["photsys_file"] = 'tab_mag_odfnew/tab_mag_TESS_2mass_kepler.dat' #"tab_mag_odfnew/tab_mag_TESS_2mass.dat"
     browser["icm_lim"] = "1"
     browser["mag_lim"] = "21"
     browser["binary_kind"] = "0"
@@ -261,7 +309,7 @@ def query_TRILEGAL(RA: float, Dec: float, verbose: int = 1):
         browser["eq_alpha"] = str(RA)
         browser["eq_delta"] = str(Dec)
         browser["field"] = "0.1"
-        browser["photsys_file"] = "tab_mag_odfnew/tab_mag_2mass.dat"
+        browser["photsys_file"] = 'tab_mag_odfnew/tab_mag_TESS_2mass_kepler.dat' #"tab_mag_odfnew/tab_mag_2mass.dat"
         browser["icm_lim"] = "1"
         browser["mag_lim"] = "21"
         browser["binary_kind"] = "0"
@@ -293,7 +341,7 @@ def save_trilegal(output_url, ID: int):
         output_url (str): URL of page with query results.
         ID (int): ID of the target.
     Returns:
-        fname (str): File name of csv containing trilegal results. 
+        fname (str): File name of csv containing trilegal results.
     """
     if output_url is None:
         print(
