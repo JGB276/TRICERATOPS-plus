@@ -460,7 +460,7 @@ def estimate_sdss_magnitudes(b, v, j):
     g = (g_from_v1 + g_from_v2 + g_from_b + g_from_v3 )/4
 
     # Estimate r magnitude
-    r = v_mag - 0.42*(b_v) + 0.11 # Jester et al. 2005
+    r = v - 0.42*(b_v) + 0.11 # Jester et al. 2005
 
     # Estimate i magnitude
     i = r - ((g - j) - 1.379*(g - r) - 0.518)/1.702 # from https://academic.oup.com/mnras/article/384/3/1178/988743
