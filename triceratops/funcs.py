@@ -389,6 +389,10 @@ def trilegal_results(trilegal_fname: str, Tmag: float):
     Jmags = df["J"].values
     Hmags = df["H"].values
     Kmags = df["Ks"].values
+    gmags = df["g"].values
+    rmags = df["r"].values
+    imags = df["i"].values
+    zmags = df["z"].values
     headers = np.array(list(df))
     # if able to use TRILEGAL v1.6 and get TESS mags, use them
     if "TESS" in headers:
@@ -401,6 +405,10 @@ def trilegal_results(trilegal_fname: str, Tmag: float):
         Jmags = Jmags[mask]
         Hmags = Hmags[mask]
         Kmags = Kmags[mask]
+        gmags = gmags[mask]
+        rmags = rmags[mask]
+        imags = imags[mask]
+        zmags = zmags[mask]
     # otherwise, use 2mass mags from TRILEGAL v1.5 and convert
     # to T mags using the relations from section 2.2.1.1 of
     # Stassun et al. 2018
@@ -430,4 +438,35 @@ def trilegal_results(trilegal_fname: str, Tmag: float):
         Jmags = Jmags[mask]
         Hmags = Hmags[mask]
         Kmags = Kmags[mask]
-    return Tmags, Masses, loggs, Teffs, Zs, Jmags, Hmags, Kmags
+        gmags = gmags[mask]
+        rmags = rmags[mask]
+        imags = imags[mask]
+        zmags = zmags[mask]
+
+    return Tmags, Masses, loggs, Teffs, Zs, Jmags, Hmags, Kmags, gmags, rmags, imags, zmags
+
+
+def estimate_sdss_magnitudes(b, v, j):
+    # Calculate color indices
+    b_v = b - v
+
+    # Estimate g magnitude using multiple methods
+    g_from_v1 = v + 0.60*(b_v) - 0.12 # Jester et al. 2005
+    g_from_v2 = v + 0.634*(b_v) - 0.108 # Karaali, Bilir, and Tuncel (2005)
+    g_from_v3 = v + 0.63*(b_v) - 0.124 # https://arxiv.org/pdf/astro-ph/0609121
+    g_from_b =  b + (-0.370)*(b_v) - 0.124 # Jordi et al. 2005
+
+    # Take the weighted average of the g estimates
+    g = (g_from_v1 + g_from_v2 + g_from_b + g_from_v3 )/4
+
+    # Estimate r magnitude
+    r = v_mag - 0.42*(b_v) + 0.11 # Jester et al. 2005
+
+    # Estimate i magnitude
+    i = r - ((g - j) - 1.379*(g - r) - 0.518)/1.702 # from https://academic.oup.com/mnras/article/384/3/1178/988743
+
+    # Estimate z magnitude using relations https://arxiv.org/pdf/astro-ph/0609121
+    R_I = ((r - i) + 0.236)/1.007
+    z = -1.584*(R_I) + 0.386 + r
+
+    return g, r, i, z

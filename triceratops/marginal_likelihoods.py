@@ -5,7 +5,7 @@ from pkg_resources import resource_filename
 
 from .likelihoods import *
 from .priors import *
-from .funcs import stellar_relations, flux_relation
+from .funcs import stellar_relations, flux_relation, estimate_sdss_magnitudes
 
 np.seterr(divide='ignore')
 
@@ -70,6 +70,38 @@ ldc_Kband_Teffs = np.array(ldc_Kband.Teff, dtype=int)
 ldc_Kband_loggs = np.array(ldc_Kband.logg, dtype=float)
 ldc_Kband_u1s = np.array(ldc_Kband.aLSM, dtype=float)
 ldc_Kband_u2s = np.array(ldc_Kband.bLSM, dtype=float)
+
+LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_g.csv')
+ldc_gband = read_csv(LDC_FILE)
+ldc_gband_Zs = np.array(ldc_gband.Z, dtype=float)
+ldc_gband_Teffs = np.array(ldc_gband.Teff, dtype=int)
+ldc_gband_loggs = np.array(ldc_gband.logg, dtype=float)
+ldc_gband_u1s = np.array(ldc_gband.aLSM, dtype=float)
+ldc_gband_u2s = np.array(ldc_gband.bLSM, dtype=float)
+
+LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_r.csv')
+ldc_rband = read_csv(LDC_FILE)
+ldc_rband_Zs = np.array(ldc_rband.Z, dtype=float)
+ldc_rband_Teffs = np.array(ldc_rband.Teff, dtype=int)
+ldc_rband_loggs = np.array(ldc_rband.logg, dtype=float)
+ldc_rband_u1s = np.array(ldc_rband.aLSM, dtype=float)
+ldc_rband_u2s = np.array(ldc_rband.bLSM, dtype=float)
+
+LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_i.csv')
+ldc_iband = read_csv(LDC_FILE)
+ldc_iband_Zs = np.array(ldc_iband.Z, dtype=float)
+ldc_iband_Teffs = np.array(ldc_iband.Teff, dtype=int)
+ldc_iband_loggs = np.array(ldc_iband.logg, dtype=float)
+ldc_iband_u1s = np.array(ldc_iband.aLSM, dtype=float)
+ldc_iband_u2s = np.array(ldc_iband.bLSM, dtype=float)
+
+LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_g.csv')
+ldc_zband = read_csv(LDC_FILE)
+ldc_zband_Zs = np.array(ldc_zband.Z, dtype=float)
+ldc_zband_Teffs = np.array(ldc_zband.Teff, dtype=int)
+ldc_zband_loggs = np.array(ldc_zband.logg, dtype=float)
+ldc_zband_u1s = np.array(ldc_zband.aLSM, dtype=float)
+ldc_zband_u2s = np.array(ldc_zband.bLSM, dtype=float)
 
 def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
@@ -164,6 +196,34 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
@@ -390,6 +450,34 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
@@ -752,6 +840,34 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
 
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
+
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -1063,6 +1179,34 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
@@ -1542,6 +1686,38 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
 
+        elif filt_lc == "g":
+            ldc_P = ldc_gband
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P = ldc_rband
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P = ldc_iband
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P = ldc_zband
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
+
         ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
         Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
         loggs_at_Z_p = np.array(ldc_at_Z_p.logg, dtype=float)
@@ -1868,6 +2044,38 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P = ldc_gband
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P = ldc_rband
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P = ldc_iband
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P = ldc_zband
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
         ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
         Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
@@ -2207,7 +2415,9 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
 def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
-            Z: float, Tmag: float, Jmag: float, Hmag: float,
+            Z: float, Bmag: float, Vmag: float,
+            gmag: float, rmag: float, imag: float, zmag: float,
+            Tmag: float, Jmag: float, Hmag: float,
             Kmag: float, trilegal_fname: str,
             contrast_curve_file: str = None, filt: str = "TESS",
             N: int = 1000000, parallel: bool = False,
@@ -2303,6 +2513,34 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
 
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
+
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -2322,7 +2560,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
-        Jmags_comp, Hmags_comp, Kmags_comp) = (
+        Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     delta_mags = Tmag - Tmags_comp
@@ -2331,14 +2569,40 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     delta_Kmags = Kmag - Kmags_comp
     fluxratios_comp = 10**(delta_mags/2.5) / (1 + 10**(delta_mags/2.5))
 
-    if filt_lc == "J":
-        fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+    # checks if the TIC returns nans for griz mags
+    no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
+        (np.isnan(imag)) and (np.isnan(zmag))
 
-    elif filt_lc == "H":
-        fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
+        print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
+        gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
+        print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
+        delta_gmags = gmag - gmags_comp
+        delta_rmags = rmag - rmags_comp
+        delta_imags = imag - imags_comp
+        delta_zmags = zmag - zmags_comp
 
-    elif filt_lc == "K":
-        fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+    if (external_lc_file != None):
+        if filt_lc == "J":
+            fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+
+        elif filt_lc == "H":
+            fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+
+        elif filt_lc == "K":
+            fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+
+        elif filt_lc == "g":
+            fluxratios_comp_lc_band = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+
+        elif filt_lc == "r":
+            fluxratios_comp_lc_band = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+
+        elif filt_lc == "i":
+            fluxratios_comp_lc_band = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+
+        elif filt_lc == "z":
+            fluxratios_comp_lc_band = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
 
     N_comp = Tmags_comp.shape[0]
     # draw random sample of background stars
@@ -2512,7 +2776,9 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
 def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
-            Z: float, Tmag: float, Jmag: float, Hmag: float,
+            Z: float, Bmag: float, Vmag: float,
+            gmag: float, rmag: float, imag: float, zmag: float,
+            Tmag: float, Jmag: float, Hmag: float,
             Kmag: float, trilegal_fname: str,
             contrast_curve_file: str = None, filt: str = "TESS",
             N: int = 1000000, parallel: bool = False,
@@ -2608,6 +2874,34 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
 
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
+
         this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
         this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
         this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
@@ -2643,7 +2937,6 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         / (flux_relation(masses) + flux_relation(np.array([M_s])))
         )
 
-
     if (external_lc_file != None):
         # print(filt_lc)
         fluxratios_lc_band = (
@@ -2653,7 +2946,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
-        Jmags_comp, Hmags_comp, Kmags_comp) = (
+        Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     delta_mags = Tmag - Tmags_comp
@@ -2662,14 +2955,41 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     delta_Kmags = Kmag - Kmags_comp
     fluxratios_comp = 10**(delta_mags/2.5) / (1 + 10**(delta_mags/2.5))
 
-    if filt_lc == "J":
-        fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+    # checks if the TIC returns nans for griz mags
+    no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
+        (np.isnan(imag)) and (np.isnan(zmag))
 
-    elif filt_lc == "H":
-        fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
 
-    elif filt_lc == "K":
-        fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
+          print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
+          gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
+          print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
+          delta_gmags = gmag - gmags_comp
+          delta_rmags = rmag - rmags_comp
+          delta_imags = imag - imags_comp
+          delta_zmags = zmag - zmags_comp
+
+    if (external_lc_file != None):
+        if filt_lc == "J":
+            fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+
+        elif filt_lc == "H":
+            fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+
+        elif filt_lc == "K":
+            fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+
+        elif filt_lc == "g":
+            fluxratios_comp_lc_band = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+
+        elif filt_lc == "r":
+            fluxratios_comp_lc_band = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+
+        elif filt_lc == "i":
+            fluxratios_comp_lc_band = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+
+        elif filt_lc == "z":
+            fluxratios_comp_lc_band = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
 
     N_comp = Tmags_comp.shape[0]
     # draw random sample of background stars
@@ -2946,6 +3266,8 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
 def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
+            Bmag: float, Vmag: float,
+            gmag: float, rmag: float, imag: float, zmag: float,
             Tmag: float, Jmag: float, Hmag: float, Kmag: float,
             trilegal_fname: str,
             contrast_curve_file: str = None, filt: str = "TESS",
@@ -2995,7 +3317,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
-        Jmags_comp, Hmags_comp, Kmags_comp) = (
+        Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     radii_comp = np.sqrt(G*masses_comp*Msun / 10**loggs_comp) / Rsun
@@ -3005,14 +3327,41 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     delta_Kmags = Kmag - Kmags_comp
     fluxratios_comp = 10**(delta_mags/2.5) / (1 + 10**(delta_mags/2.5))
 
-    if filt_lc == "J":
-        fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+    # checks if the TIC returns nans for griz mags
+    no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
+        (np.isnan(imag)) and (np.isnan(zmag))
 
-    elif filt_lc == "H":
-        fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
 
-    elif filt_lc == "K":
-        fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
+          print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
+          gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
+          print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
+          delta_gmags = gmag - gmags_comp
+          delta_rmags = rmag - rmags_comp
+          delta_imags = imag - imags_comp
+          delta_zmags = zmag - zmags_comp
+
+    if (external_lc_file != None):
+        if filt_lc == "J":
+            fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+
+        elif filt_lc == "H":
+            fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+
+        elif filt_lc == "K":
+            fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+
+        elif filt_lc == "g":
+            fluxratios_comp_lc_band = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+
+        elif filt_lc == "r":
+            fluxratios_comp_lc_band = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+
+        elif filt_lc == "i":
+            fluxratios_comp_lc_band = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+
+        elif filt_lc == "z":
+            fluxratios_comp_lc_band = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
 
     N_comp = Tmags_comp.shape[0]
     # determine limb darkening coefficients of background stars
@@ -3051,6 +3400,34 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
     u1s_comp, u2s_comp = np.zeros(N_comp), np.zeros(N_comp)
     u1s_comp_p, u2s_comp_p = np.zeros(N_comp), np.zeros(N_comp) # this is for the external_lc data
@@ -3259,6 +3636,8 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
 
 def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             P_orb: float, M_s: float, R_s: float, Teff: float,
+            Bmag: float, Vmag: float, gmag: float,
+            rmag: float, imag: float, zmag: float,
             Tmag: float, Jmag:float, Hmag: float, Kmag: float,
             trilegal_fname: str,
             contrast_curve_file: str = None, filt: str = "TESS",
@@ -3316,7 +3695,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
-        Jmags_comp, Hmags_comp, Kmags_comp) = (
+        Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     radii_comp = np.sqrt(G*masses_comp*Msun / 10**loggs_comp) / Rsun
@@ -3328,6 +3707,27 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     fluxratios_comp_J = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
     fluxratios_comp_H = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
     fluxratios_comp_K = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+
+    # checks if the TIC returns nans for griz mags
+    no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
+        (np.isnan(imag)) and (np.isnan(zmag))
+
+
+    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
+          print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
+          gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
+          print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
+          delta_gmags = gmag - gmags_comp
+          delta_rmags = rmag - rmags_comp
+          delta_imags = imag - imags_comp
+          delta_zmags = zmag - zmags_comp
+
+          fluxratios_comp_g = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+          fluxratios_comp_r = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+          fluxratios_comp_i = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+          fluxratios_comp_z = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
+
+
     N_comp = Tmags_comp.shape[0]
     # determine limb darkening coefficients of background stars
     if mission == "TESS":
@@ -3365,6 +3765,34 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             ldc_P_loggs = ldc_Kband_loggs
             ldc_P_u1s = ldc_Kband_u1s
             ldc_P_u2s = ldc_Kband_u2s
+
+        elif filt_lc == "g":
+            ldc_P_Zs = ldc_gband_Zs
+            ldc_P_Teffs = ldc_gband_Teffs
+            ldc_P_loggs = ldc_gband_loggs
+            ldc_P_u1s = ldc_gband_u1s
+            ldc_P_u2s = ldc_gband_u2s
+
+        elif filt_lc == "r":
+            ldc_P_Zs = ldc_rband_Zs
+            ldc_P_Teffs = ldc_rband_Teffs
+            ldc_P_loggs = ldc_rband_loggs
+            ldc_P_u1s = ldc_rband_u1s
+            ldc_P_u2s = ldc_rband_u2s
+
+        elif filt_lc == "i":
+            ldc_P_Zs = ldc_iband_Zs
+            ldc_P_Teffs = ldc_iband_Teffs
+            ldc_P_loggs = ldc_iband_loggs
+            ldc_P_u1s = ldc_iband_u1s
+            ldc_P_u2s = ldc_iband_u2s
+
+        elif filt_lc == "z":
+            ldc_P_Zs = ldc_zband_Zs
+            ldc_P_Teffs = ldc_zband_Teffs
+            ldc_P_loggs = ldc_zband_loggs
+            ldc_P_u1s = ldc_zband_u1s
+            ldc_P_u2s = ldc_zband_u2s
 
     u1s_comp, u2s_comp = np.zeros(N_comp), np.zeros(N_comp)
     u1s_comp_p, u2s_comp_p = np.zeros(N_comp), np.zeros(N_comp)
@@ -3450,6 +3878,14 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             flux_term = fluxratios_comp_H
         elif filt_lc == "K":
             flux_term = fluxratios_comp_K
+        elif filt_lc == "g":
+            flux_term = fluxratios_comp_g
+        elif filt_lc == "r":
+            flux_term = fluxratios_comp_r
+        elif filt_lc == "i":
+            flux_term = fluxratios_comp_i
+        elif filt_lc == "z":
+            flux_term = fluxratios_comp_z
 
         distance_correction_lc_band = flux_term[idxs]/fluxratios_comp_bound_lc_band
         fluxratios_lc_band = (
@@ -3467,6 +3903,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         fluxratios_comp_cc = fluxratios_comp_K[idxs]
     else:
         fluxratios_comp_cc = fluxratios_comp[idxs]
+
     fluxratios_comp_bound_cc = (
         flux_relation(masses_comp[idxs], filt)
         / (
@@ -3801,7 +4238,7 @@ def lnZ_NTP_unknown(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine properties of possible stars
     (Tmags_nearby, masses_nearby, loggs_nearby, Teffs_nearby,
-        Zs_nearby, Jmags_nearby, Hmags_nearby, Kmags_nearby) = (
+        Zs_nearby, Jmags_nearby, Hmags_nearby, Kmags_nearby, _, _, _, _) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     mask = (Tmag-1 < Tmags_nearby) & (Tmags_nearby < Tmag+1)
@@ -4000,7 +4437,7 @@ def lnZ_NEB_unknown(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # determine properties of possible stars
     (Tmags_nearby, masses_nearby, loggs_nearby, Teffs_nearby,
-        Zs_nearby, Jmags_nearby, Hmags_nearby, Kmags_nearby) = (
+        Zs_nearby, Jmags_nearby, Hmags_nearby, Kmags_nearby, _, _, _, _) = (
         trilegal_results(trilegal_fname, Tmag)
         )
     mask = (Tmag-1 < Tmags_nearby) & (Tmags_nearby < Tmag+1)

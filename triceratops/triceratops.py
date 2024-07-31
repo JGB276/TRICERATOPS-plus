@@ -105,8 +105,8 @@ class target:
             )
         tic_result = df
         new_df = df[
-            "ID", "Tmag", "Jmag", "Hmag", "Kmag",
-            "ra", "dec", "mass", "rad", "Teff", "plx"
+            "ID", "Bmag", "Vmag", "GAIAmag", "Tmag", "Jmag", "Hmag", "Kmag", "gmag", "rmag", "imag", "zmag",
+            "ra", "dec", "mass", "rad", "Teff", "plx" # can add d
             ]
         stars = new_df.to_pandas()
 
@@ -708,10 +708,16 @@ class target:
             M_s = filtered_stars["mass"].values[i]
             R_s = filtered_stars["rad"].values[i]
             Teff = filtered_stars["Teff"].values[i]
+            Bmag = filtered_stars["Bmag"].values[i] # new
+            Vmag = filtered_stars["Vmag"].values[i] # new
             Tmag = filtered_stars["Tmag"].values[i]
             Jmag = filtered_stars["Jmag"].values[i]
             Hmag = filtered_stars["Hmag"].values[i]
             Kmag = filtered_stars["Kmag"].values[i]
+            gmag = filtered_stars["gmag"].values[i] # new
+            rmag = filtered_stars["gmag"].values[i] # new
+            imag = filtered_stars["gmag"].values[i] # new
+            zmag = filtered_stars["gmag"].values[i] # new
             plx = filtered_stars["plx"].values[i]
             Z = Z_star # if known Z will get updated
             ra = filtered_stars["ra"].values[i]
@@ -1167,6 +1173,8 @@ class target:
                         res = lnZ_DTP(
                             time, flux, flux_err, P_orb,
                             M_s, R_s, Teff, Z,
+                            Bmag, Vmag,
+                            gmag, rmag, imag, zmag,
                             Tmag, Jmag, Hmag, Kmag,
                             trilegal_fname,
                             contrast_curve_file, filt,
@@ -1227,6 +1235,8 @@ class target:
                         res, res_twin = lnZ_DEB(
                             time, flux, flux_err, P_orb,
                             M_s, R_s, Teff, Z,
+                            Bmag, Vmag,
+                            gmag, rmag, imag, zmag,
                             Tmag, Jmag, Hmag, Kmag,
                             trilegal_fname,
                             contrast_curve_file, filt,
@@ -1304,6 +1314,8 @@ class target:
                         res = lnZ_BTP(
                             time, flux, flux_err, P_orb,
                             M_s, R_s, Teff,
+                            Bmag, Vmag,
+                            gmag, rmag, imag, zmag,
                             Tmag, Jmag, Hmag, Kmag,
                             trilegal_fname,
                             contrast_curve_file, filt,
@@ -1360,6 +1372,8 @@ class target:
                         res, res_twin = lnZ_BEB(
                             time, flux, flux_err, P_orb,
                             M_s, R_s, Teff,
+                            Bmag, Vmag,
+                            gmag, rmag, imag, zmag,
                             Tmag, Jmag, Hmag, Kmag,
                             trilegal_fname,
                             contrast_curve_file, filt,
