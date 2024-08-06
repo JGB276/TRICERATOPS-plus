@@ -628,9 +628,10 @@ class target:
                    drop_scenario: list = [],
                    verbose: int = 1, flatpriors: bool = False,
                    exptime: float = 0.00139, nsamples: int = 20,
-                   molusc_file: str = None, external_lc_file: str = None,
-                   filt_lc: str = "J",
+                   molusc_file: str = None, external_lc_files: list = None,
+                   filt_lcs: list = None,
                    lnz_const: int = 600, Z_star = 0.0):
+
         """Run to calculate FPP and NFPP.
 
         Calculates the relative probability of each scenario.
@@ -662,6 +663,9 @@ class target:
                 TESS, Vis, J, H, and K.
             lnz_const (float): Fudge factor for lnZ calculation.
             Z_star (float) = Metallicity of target star.
+            external_lc_files (list[str]): List of paths to external light curves (up to 4).
+            filt_lcs (list[str]): List of photometric filters for external light curves.
+                Options are TESS, g, r, i, z, J, H, and K.
         """
         # remove nans from light curve
         mask = ~np.isnan(time) & ~np.isnan(flux_0)
@@ -672,6 +676,7 @@ class target:
         # each scenario considered
         filtered_stars = self.stars[self.stars["tdepth"] > 0]
         N_scenarios = 3*len(filtered_stars) + 12
+        num_external_lcs = len(external_lc_files) if external_lc_files else 0
         targets = np.zeros(N_scenarios, dtype=np.dtype("i8"))
         star_num = np.zeros(N_scenarios, dtype=np.dtype("i8"))
         scenarios = np.zeros(N_scenarios, dtype=np.dtype('U6'))
@@ -679,8 +684,8 @@ class target:
         best_R_host = np.zeros(N_scenarios)
         best_u1 = np.zeros(N_scenarios)
         best_u2 = np.zeros(N_scenarios)
-        best_u1_p = np.zeros(N_scenarios) # for palomar data
-        best_u2_p = np.zeros(N_scenarios) # for palomar data
+        best_u1_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
+        best_u2_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
         best_P_orb = np.zeros(N_scenarios)
         best_i = np.zeros(N_scenarios)
         best_b = np.zeros(N_scenarios)
@@ -691,13 +696,12 @@ class target:
         best_R_EB = np.zeros(N_scenarios)
         best_fluxratio_EB = np.zeros(N_scenarios)
         best_fluxratio_comp = np.zeros(N_scenarios)
-        best_fluxratio_EB_p = np.zeros(N_scenarios) # for palomar data
-        best_fluxratio_comp_p = np.zeros(N_scenarios) # for palomar data
+        best_fluxratio_EB_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
+        best_fluxratio_comp_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
         best_M_comp = np.zeros(N_scenarios) # for all with dilution
         best_R_comp = np.zeros(N_scenarios) # for all with dilution
         best_T_comp = np.zeros(N_scenarios) # for all with dilution
         lnZ = np.zeros(N_scenarios)
-        lnZ_p = np.zeros(N_scenarios) # for palomar data only
 
         for i, ID in enumerate(filtered_stars["ID"].values):
             # subtract flux from other stars in the aperture
@@ -771,8 +775,10 @@ class target:
                             M_s, R_s, Teff, Z,
                             N, parallel, self.mission,
                             flatpriors,
-                            exptime, nsamples, external_lc_file,
-                            filt_lc, lnz_const)
+                            exptime, nsamples,
+                            external_lc_files, filt_lcs,
+                            lnz_const)
+
                         # self.res_TTP = res
                         j = 0
                         targets[j] = ID
@@ -793,12 +799,10 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0]
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            # lnZ_p[i][j] = rest[f'lnZ_p{i+1}']
 
                     if "EB" in drop_scenario:
                         j = 1
@@ -824,7 +828,7 @@ class target:
                             N, parallel, self.mission,
                             flatpriors,
                             exptime, nsamples,
-                            external_lc_file, filt_lc,
+                            external_lc_files, filt_lcs,
                             lnz_const)
                         # self.res_TEB = res
                         j = 1
@@ -846,12 +850,11 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0] # add the palomar limb darkening coeffs
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
+                            #best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
 
                         # self.res_TEBx2P = res_twin
                         j = 2
@@ -873,12 +876,11 @@ class target:
                         best_fluxratio_EB[j] = res_twin["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res_twin["fluxratio_comp"][0]
                         lnZ[j] = res_twin["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res_twin["u1_p"][0]
-                            best_u2_p[j] = res_twin["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res_twin["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res_twin["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res_twin["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res_twin[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res_twin[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res_twin[f'fluxratio_EB_p{i+1}'][0]
+                            #best_fluxratio_comp_p[i][j] = res_twin[f'fluxratio_comp_p{i+1}'][0]
                             #print("TESS band", best_fluxratio_EB[j])
                             #print("J band", best_fluxratio_EB_p[j])
 
@@ -904,7 +906,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             molusc_file,
-                            external_lc_file, filt_lc,
+                            external_lc_files, filt_lcs,
                             lnz_const)
                         # self.res_PTP = res
                         j = 3
@@ -923,22 +925,22 @@ class target:
                         best_argp[j] = res["argp"][0]
                         best_M_EB[j] = res["M_EB"][0]
                         best_R_EB[j] = res["R_EB"][0]
-                        best_M_comp[j] = res["M_comp"][0] # for all with dilution
-                        best_R_comp[j] = res["R_comp"][0] # for all with dilution
-                        best_T_comp[j] = res["T_comp"][0] # for all with dilution
+                        #best_M_comp[j] = res["M_comp"][0] # for all with dilution
+                        #best_R_comp[j] = res["R_comp"][0] # for all with dilution
+                        #best_T_comp[j] = res["T_comp"][0] # for all with dilution
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        PTP_Tmag_comp_flux_ratio = res["fluxratio_comp"]
-                        PTP_Tcomps = res["T_comp"]
-                        PTP_mcomps = res["M_comp"]
-                        PTP_rcomps = res["R_comp"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0]
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        #PTP_Tmag_comp_flux_ratio = res["fluxratio_comp"]
+                        #PTP_Tcomps = res["T_comp"]
+                        #PTP_mcomps = res["M_comp"]
+                        #PTP_rcomps = res["R_comp"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            #best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
+                            #lnZ_p[j] = res["lnZ_p"]
                             #print("TESS band", best_fluxratio_comp[j])
                             #print("J band", best_fluxratio_comp_p[j])
 
@@ -969,7 +971,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             molusc_file,
-                            external_lc_file, filt_lc,
+                            external_lc_files, filt_lcs,
                             lnz_const)
                         # self.res_PEB = res
                         j = 4
@@ -991,12 +993,12 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0]
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
+                            #lnZ_p[j] = res["lnZ_p"]
                         # self.res_PEBx2P = res_twin
                         j = 5
                         targets[j] = ID
@@ -1017,12 +1019,11 @@ class target:
                         best_fluxratio_EB[j] = res_twin["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res_twin["fluxratio_comp"][0]
                         lnZ[j] = res_twin["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res_twin["u1_p"][0]
-                            best_u2_p[j] = res_twin["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res_twin["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res_twin["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res_twin["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res_twin[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res_twin[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res_twin[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res_twin[f'fluxratio_comp_p{i+1}'][0]
 
                     if "STP" in drop_scenario:
                         j = 6
@@ -1046,7 +1047,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             molusc_file,
-                            external_lc_file, filt_lc,
+                            external_lc_files, filt_lcs,
                             lnz_const)
                         # self.res_STP = res
                         j = 6
@@ -1068,12 +1069,16 @@ class target:
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0]
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
+                            # best_u1_p[j] = res["u1_p"][0]
+                            # best_u2_p[j] = res["u2_p"][0]
+                            # best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
+                            # best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
+                            # lnZ_p[j] = res["lnZ_p"]
 
                     if "SEB" in drop_scenario:
                         j = 7
@@ -1529,85 +1534,61 @@ class target:
         for i in range(N_scenarios):
             relative_probs[i] = (np.exp(lnZ[i])) / np.sum(np.exp(lnZ))
 
-        if (external_lc_file != None):
-            for i in range(N_scenarios):
-                relative_probs_p[i] = (np.exp(lnZ_p[i])) / np.sum(np.exp(lnZ_p))
+        prob_df = DataFrame({
+            "ID": targets,
+            "scenario": scenarios,
+            "M_s": best_M_host,
+            "R_s": best_R_host,
+            "P_orb": best_P_orb,
+            "inc": best_i,
+            "b": best_b,
+            "ecc": best_ecc,
+            "w": best_argp,
+            "R_p": best_R_p,
+            "M_EB": best_M_EB,
+            "R_EB": best_R_EB,
+            "M_comp": best_M_comp,
+            "R_comp": best_R_comp, # not provided by Trilegal
+            "T_comp": best_T_comp,
+            "flux_ratio_comp_T": best_fluxratio_comp,
+            "prob": relative_probs,
+            "lnZ": lnZ
+            })
 
-        # now save all of the arrays as a dataframe
-        if (external_lc_file != None):
-            prob_df = DataFrame({
-                "ID": targets,
-                "scenario": scenarios,
-                "M_s": best_M_host,
-                "R_s": best_R_host,
-                "P_orb": best_P_orb,
-                "inc": best_i,
-                "b": best_b,
-                "ecc": best_ecc,
-                "w": best_argp,
-                "R_p": best_R_p,
-                "M_EB": best_M_EB,
-                "R_EB": best_R_EB,
-                "M_comp": best_M_comp,
-                "R_comp": best_R_comp, # not provided by Trilegal
-                "T_comp": best_T_comp,
-                "flux_ratio_comp_T": best_fluxratio_comp,
-                f"flux_ratio_comp_{filt_lc}": best_fluxratio_comp_p,
-                "prob": relative_probs,
-                "prob_p": relative_probs_p,
-                "lnZ": lnZ,
-                "lnZ_p": lnZ_p})
-        else:
-            prob_df = DataFrame({
-                "ID": targets,
-                "scenario": scenarios,
-                "M_s": best_M_host,
-                "R_s": best_R_host,
-                "P_orb": best_P_orb,
-                "inc": best_i,
-                "b": best_b,
-                "ecc": best_ecc,
-                "w": best_argp,
-                "R_p": best_R_p,
-                "M_EB": best_M_EB,
-                "R_EB": best_R_EB,
-                "M_comp": best_M_comp,
-                "R_comp": best_R_comp, # not provided by Trilegal
-                "T_comp": best_T_comp,
-                "flux_ratio_comp_T": best_fluxratio_comp,
-                "prob": relative_probs,
-                "lnZ": lnZ
-                })
+        # Add results for each external light curve
+        for i in range(num_external_lcs):
+            prob_df[f'flux_ratio_EB_{filt_lcs[i]}_{i+1}'] = best_fluxratio_EB_p[i]
+            prob_df[f'flux_ratio_comp_{filt_lcs[i]}_{i+1}'] = best_fluxratio_comp_p[i]
+
+
         self.probs = prob_df
         self.star_num = star_num
         self.u1 = best_u1
         self.u2 = best_u2
         self.fluxratio_EB = best_fluxratio_EB
         self.fluxratio_comp = best_fluxratio_comp
+
         # for PTP and DTP scenarios
-        if "PTP" not in drop_scenario:
-            self.PTP_Tmag_comp_flux_ratio = PTP_Tmag_comp_flux_ratio
-            self.PTP_Tcomps = PTP_Tcomps # for PTP scenario
-            self.PTP_mcomps = PTP_mcomps
-            self.PTP_rcomps = PTP_rcomps
-        if "DTP" not in drop_scenario:
-            self.DTP_Tcomps = DTP_Tcomps # for DTP scenario
-            self.DTP_Tmag_comp_flux_ratio = DTP_Tmag_comp_flux_ratio
-        if (external_lc_file != None):
+        # if "PTP" not in drop_scenario:
+        #     self.PTP_Tmag_comp_flux_ratio = PTP_Tmag_comp_flux_ratio
+        #     self.PTP_Tcomps = PTP_Tcomps # for PTP scenario
+        #     self.PTP_mcomps = PTP_mcomps
+        #     self.PTP_rcomps = PTP_rcomps
+
+        # if "DTP" not in drop_scenario:
+        #     self.DTP_Tcomps = DTP_Tcomps # for DTP scenario
+        #     self.DTP_Tmag_comp_flux_ratio = DTP_Tmag_comp_flux_ratio
+
+        if (external_lc_files != None):
             self.u1_p = best_u1_p
             self.u2_p = best_u2_p
             self.fluxratio_EB_p = best_fluxratio_EB_p
             self.fluxratio_comp_p = best_fluxratio_comp_p
-            #self.DP = 1-(prob_df.prob[0]/(prob_df.prob[0]+prob_df.prob[3]+prob_df.prob[9])) # dilution prob.
+
 
         # calculate the FPP, PFPP, NFPP, and DTP
         self.FPP = 1-(prob_df.prob[0]+prob_df.prob[3]+prob_df.prob[9])
-        self.DP = 1-(prob_df.prob[0]/(prob_df.prob[0]+prob_df.prob[3]+prob_df.prob[9])) # dilution prob.
-
-        if (external_lc_file != None):
-            self.PFPP = 1-(prob_df.prob_p[0]+prob_df.prob_p[3]+prob_df.prob_p[9]) # Palomar FPP
-        else:
-            self.PFPP = 0.0
+        #self.DP = 1-(prob_df.prob[0]/(prob_df.prob[0]+prob_df.prob[3]+prob_df.prob[9])) # dilution prob.
 
         if len(prob_df.prob) > 15:
             self.NFPP = np.sum(prob_df.prob[15:])
