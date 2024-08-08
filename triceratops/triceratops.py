@@ -700,7 +700,7 @@ class target:
         best_fluxratio_comp_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
         best_M_comp = np.zeros(N_scenarios) # for all with dilution
         best_R_comp = np.zeros(N_scenarios) # for all with dilution
-        best_T_comp = np.zeros(N_scenarios) # for all with dilution
+        #best_T_comp = np.zeros(N_scenarios) # for all with dilution
         lnZ = np.zeros(N_scenarios)
 
         for i, ID in enumerate(filtered_stars["ID"].values):
@@ -925,24 +925,15 @@ class target:
                         best_argp[j] = res["argp"][0]
                         best_M_EB[j] = res["M_EB"][0]
                         best_R_EB[j] = res["R_EB"][0]
-                        #best_M_comp[j] = res["M_comp"][0] # for all with dilution
-                        #best_R_comp[j] = res["R_comp"][0] # for all with dilution
-                        #best_T_comp[j] = res["T_comp"][0] # for all with dilution
+                        best_M_comp[j] = res["M_comp"][0]
+                        best_R_comp[j] = res["R_comp"][0]
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        #PTP_Tmag_comp_flux_ratio = res["fluxratio_comp"]
-                        #PTP_Tcomps = res["T_comp"]
-                        #PTP_mcomps = res["M_comp"]
-                        #PTP_rcomps = res["R_comp"]
                         for i in range(num_external_lcs):
                             best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
                             best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
-                            #best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
                             best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
-                            #lnZ_p[j] = res["lnZ_p"]
-                            #print("TESS band", best_fluxratio_comp[j])
-                            #print("J band", best_fluxratio_comp_p[j])
 
                     if "PEB" in drop_scenario:
                         j = 4
@@ -990,6 +981,8 @@ class target:
                         best_argp[j] = res["argp"][0]
                         best_M_EB[j] = res["M_EB"][0]
                         best_R_EB[j] = res["R_EB"][0]
+                        best_M_comp[j] = res["M_comp"][0]
+                        best_R_comp[j] = res["R_comp"][0]
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
@@ -1016,6 +1009,8 @@ class target:
                         best_argp[j] = res_twin["argp"][0]
                         best_M_EB[j] = res_twin["M_EB"][0]
                         best_R_EB[j] = res_twin["R_EB"][0]
+                        best_M_comp[j] = res_twin["M_comp"][0]
+                        best_R_comp[j] = res_twin["R_comp"][0]
                         best_fluxratio_EB[j] = res_twin["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res_twin["fluxratio_comp"][0]
                         lnZ[j] = res_twin["lnZ"]
@@ -1066,6 +1061,8 @@ class target:
                         best_argp[j] = res["argp"][0]
                         best_M_EB[j] = res["M_EB"][0]
                         best_R_EB[j] = res["R_EB"][0]
+                        best_M_comp[j] = res["M_comp"][0]
+                        best_R_comp[j] = res["R_comp"][0]
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
@@ -1107,7 +1104,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             molusc_file,
-                            external_lc_file, filt_lc,
+                            external_lc_files, filt_lcs,
                             lnz_const)
                         # self.res_SEB = res
                         j = 7
@@ -1126,15 +1123,17 @@ class target:
                         best_argp[j] = res["argp"][0]
                         best_M_EB[j] = res["M_EB"][0]
                         best_R_EB[j] = res["R_EB"][0]
+                        best_M_comp[j] = res["M_comp"][0]
+                        best_R_comp[j] = res["R_comp"][0]
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res["u1_p"][0]
-                            best_u2_p[j] = res["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
+                            #lnZ_p[j] = res["lnZ_p"]
                         # self.res_SEBx2P = res_twin
                         j = 8
                         targets[j] = ID
@@ -1152,15 +1151,17 @@ class target:
                         best_argp[j] = res_twin["argp"][0]
                         best_M_EB[j] = res_twin["M_EB"][0]
                         best_R_EB[j] = res_twin["R_EB"][0]
+                        best_M_comp[j] = res_twin["M_comp"][0]
+                        best_R_comp[j] = res_twin["R_comp"][0]
                         best_fluxratio_EB[j] = res_twin["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res_twin["fluxratio_comp"][0]
                         lnZ[j] = res_twin["lnZ"]
-                        if (external_lc_file != None):
-                            best_u1_p[j] = res_twin["u1_p"][0]
-                            best_u2_p[j] = res_twin["u2_p"][0]
-                            best_fluxratio_EB_p[j] = res_twin["fluxratio_EB_p"][0]
-                            best_fluxratio_comp_p[j] = res_twin["fluxratio_comp_p"][0]
-                            lnZ_p[j] = res_twin["lnZ_p"]
+                        for i in range(num_external_lcs):
+                            best_u1_p[i][j] = res_twin[f'u1_p{i+1}'][0]
+                            best_u2_p[i][j] = res_twin[f'u2_p{i+1}'][0]
+                            best_fluxratio_EB_p[i][j] = res_twin[f'fluxratio_EB_p{i+1}'][0]
+                            best_fluxratio_comp_p[i][j] = res_twin[f'fluxratio_comp_p{i+1}'][0]
+                            #lnZ_p[j] = res_twin["lnZ_p"]
 
                     if "DTP" in drop_scenario:
                         j = 9
@@ -1207,7 +1208,7 @@ class target:
                         best_R_EB[j] = res["R_EB"][0]
                         best_M_comp[j] = res["M_comp"][0] # for all with dilution
                         best_R_comp[j] = res["R_comp"][0] # for all with dilution
-                        best_T_comp[j] = res["T_comp"][0] # for all with dilution
+                        #best_T_comp[j] = res["T_comp"][0] # for all with dilution
                         best_fluxratio_EB[j] = res["fluxratio_EB"][0]
                         best_fluxratio_comp[j] = res["fluxratio_comp"][0]
                         lnZ[j] = res["lnZ"]
@@ -1549,7 +1550,7 @@ class target:
             "R_EB": best_R_EB,
             "M_comp": best_M_comp,
             "R_comp": best_R_comp, # not provided by Trilegal
-            "T_comp": best_T_comp,
+            #"T_comp": best_T_comp,
             "flux_ratio_comp_T": best_fluxratio_comp,
             "prob": relative_probs,
             "lnZ": lnZ
