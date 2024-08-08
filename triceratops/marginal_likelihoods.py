@@ -1994,10 +1994,11 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None,
-            filt_lc: str = "J", lnz_const: int = 600):
+            external_lc_files: list = None,
+            filt_lcs: list = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DTP scenario.
+    Now supports up to four external light curves with different filters.
     Args:
         time (numpy array): Time of each data point
                             [days from transit midpoint].
@@ -2023,6 +2024,8 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         flatpriors (bool): Assume flat Rp and Porb planet priors?
         exptime (float): Exposure time of observations [days].
         nsamples (int): Sampling rate for supersampling.
+        external_lc_files (List[str]): List of external light curve file paths (up to 4).
+        filt_lcs (List[str]): List of corresponding filters for external light curves.
     Returns:
         res (dict): Best-fit properties and marginal likelihood.
     """
@@ -2061,74 +2064,6 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (external_lc_file != None):
-
-        if filt_lc == "J":
-            ldc_P_Zs = ldc_J_Zs
-            ldc_P_Teffs = ldc_J_Teffs
-            ldc_P_loggs = ldc_J_loggs
-            ldc_P_u1s = ldc_J_u1s
-            ldc_P_u2s = ldc_J_u2s
-
-        elif filt_lc == "H":
-            ldc_P_Zs = ldc_H_Zs
-            ldc_P_Teffs = ldc_H_Teffs
-            ldc_P_loggs = ldc_H_loggs
-            ldc_P_u1s = ldc_H_u1s
-            ldc_P_u2s = ldc_H_u2s
-
-        elif filt_lc == "K":
-            ldc_P_Zs = ldc_Kband_Zs
-            ldc_P_Teffs = ldc_Kband_Teffs
-            ldc_P_loggs = ldc_Kband_loggs
-            ldc_P_u1s = ldc_Kband_u1s
-            ldc_P_u2s = ldc_Kband_u2s
-
-        elif filt_lc == "g":
-            ldc_P_Zs = ldc_gband_Zs
-            ldc_P_Teffs = ldc_gband_Teffs
-            ldc_P_loggs = ldc_gband_loggs
-            ldc_P_u1s = ldc_gband_u1s
-            ldc_P_u2s = ldc_gband_u2s
-
-        elif filt_lc == "r":
-            ldc_P_Zs = ldc_rband_Zs
-            ldc_P_Teffs = ldc_rband_Teffs
-            ldc_P_loggs = ldc_rband_loggs
-            ldc_P_u1s = ldc_rband_u1s
-            ldc_P_u2s = ldc_rband_u2s
-
-        elif filt_lc == "i":
-            ldc_P_Zs = ldc_iband_Zs
-            ldc_P_Teffs = ldc_iband_Teffs
-            ldc_P_loggs = ldc_iband_loggs
-            ldc_P_u1s = ldc_iband_u1s
-            ldc_P_u2s = ldc_iband_u2s
-
-        elif filt_lc == "z":
-            ldc_P_Zs = ldc_zband_Zs
-            ldc_P_Teffs = ldc_zband_Teffs
-            ldc_P_loggs = ldc_zband_loggs
-            ldc_P_u1s = ldc_zband_u1s
-            ldc_P_u2s = ldc_zband_u2s
-
-        this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
-        this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
-        this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
-        mask_p = (
-            (ldc_P_Zs == this_Z_p)
-            & (ldc_P_Teffs == this_Teff_p)
-            & (ldc_P_loggs == this_logg_p)
-            )
-        u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-
-        external_lc = np.loadtxt(external_lc_file)
-        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
-        sigma_p = np.mean(fluxerr_p)
-        lnsigma_p = np.log(sigma_p)
-        exptime_p = np.min(np.diff(time_p))
-        lnL_external_lc = np.full(N, -np.inf)
-
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
         Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
@@ -2140,40 +2075,87 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     delta_Kmags = Kmag - Kmags_comp
     fluxratios_comp = 10**(delta_mags/2.5) / (1 + 10**(delta_mags/2.5))
 
-    # checks if the TIC returns nans for griz mags
+    delta_mags_map = {
+                    "delta_TESSmags":delta_mags,
+                    "delta_Jmags":delta_Jmags,
+                    "delta_Hmags":delta_Hmags,
+                    "delta_Kmags":delta_Hmags,
+                    }
+
+    # Check if the TIC returns nans for griz mags
     no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
         (np.isnan(imag)) and (np.isnan(zmag))
 
-    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
-        print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
+    # if we are using sdss filters, but the magnitude of the target in these filters is unknown
+    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+        print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
         gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
         print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
+
+    # if we are using sdss filters, compute the delta sdss mags
+    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
         delta_gmags = gmag - gmags_comp
         delta_rmags = rmag - rmags_comp
         delta_imags = imag - imags_comp
         delta_zmags = zmag - zmags_comp
 
-    if (external_lc_file != None):
-        if filt_lc == "J":
-            fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+        #add to delta mags dictionary
+        delta_mags_map['delta_gmags'] = delta_gmags
+        delta_mags_map['delta_rmags'] = delta_rmags
+        delta_mags_map['delta_imags'] = delta_imags
+        delta_mags_map['delta_zmags'] = delta_zmags
 
-        elif filt_lc == "H":
-            fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+    external_lcs = []
+    if external_lc_files and filt_lcs:
+        parallel = True  # Force parallel execution when external LCs are provided
+        if len(external_lc_files) != len(filt_lcs):
+            raise ValueError("Number of external LC files must match number of filters")
+        if len(external_lc_files) > 4:
+            raise ValueError("Maximum of 4 external light curves supported")
 
-        elif filt_lc == "K":
-            fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+        for lc_file, filt in zip(external_lc_files, filt_lcs):
+            ldc_map = {
+                "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
+                "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
+                "K": (ldc_Kband_Zs, ldc_Kband_Teffs, ldc_Kband_loggs, ldc_Kband_u1s, ldc_Kband_u2s),
+                "g": (ldc_gband_Zs, ldc_gband_Teffs, ldc_gband_loggs, ldc_gband_u1s, ldc_gband_u2s),
+                "r": (ldc_rband_Zs, ldc_rband_Teffs, ldc_rband_loggs, ldc_rband_u1s, ldc_rband_u2s),
+                "i": (ldc_iband_Zs, ldc_iband_Teffs, ldc_iband_loggs, ldc_iband_u1s, ldc_iband_u2s),
+                "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
+            }
 
-        elif filt_lc == "g":
-            fluxratios_comp_lc_band = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
 
-        elif filt_lc == "r":
-            fluxratios_comp_lc_band = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+            this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
+            this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
+            this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
+            mask_p = (
+                (ldc_P_Zs == this_Z_p)
+                & (ldc_P_Teffs == this_Teff_p)
+                & (ldc_P_loggs == this_logg_p)
+            )
+            u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p]
 
-        elif filt_lc == "i":
-            fluxratios_comp_lc_band = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+            external_lc = np.loadtxt(lc_file)
+            time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
+            sigma_p = np.mean(fluxerr_p)
+            lnsigma_p = np.log(sigma_p)
+            exptime_p = np.min(np.diff(time_p))
 
-        elif filt_lc == "z":
-            fluxratios_comp_lc_band = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
+            delta_mags_p = delta_mags_map[f"delta_{filt}mags"]
+            fluxratios_comp_lc_band = 10**(delta_mags_p/2.5) / (1 + 10**(delta_mags_p/2.5))
+
+            external_lcs.append({
+                'time': time_p,
+                'flux': flux_p,
+                'sigma': sigma_p,
+                'lnsigma': lnsigma_p,
+                'exptime': exptime_p,
+                'u1': u1_p,
+                'u2': u2_p,
+                'fluxratios': fluxratios_comp_lc_band,
+                'lnL': np.full(N, -np.inf)
+            })
 
     N_comp = Tmags_comp.shape[0]
     # draw random sample of background stars
@@ -2226,6 +2208,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
     coll = ((rps*Rearth + R_s*Rsun) > a*(1-eccs))
 
     lnL = np.full(N, -np.inf)
+
     if parallel:
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -2246,19 +2229,21 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (external_lc_file != None):
-            u1_arr_p = np.full(N, u1_p)
-            u2_arr_p = np.full(N, u2_p)
-            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_TP_p(
-                    time_p, flux_p, sigma_p, rps[mask],
-                    P_orb[mask], incs[mask], a_arr[mask], R_s_arr[mask],
-                    u1_arr_p[mask], u2_arr_p[mask],
-                    eccs[mask], argps[mask],
-                    companion_fluxratio=fluxratios_comp_lc_band[idxs[mask]],
-                    companion_is_host=False,
-                    exptime=exptime_p, nsamples=nsamples
-                    )
-            lnL = lnL+lnL_external_lc
+
+        for ext_lc in external_lcs:
+            u1_arr_p = np.full(N, ext_lc['u1'])
+            u2_arr_p = np.full(N, ext_lc['u2'])
+            ext_lc['lnL'][mask] = -0.5*ln2pi - ext_lc['lnsigma'] - lnL_TP_p(
+                ext_lc['time'], ext_lc['flux'], ext_lc['sigma'], rps[mask],
+                P_orb[mask], incs[mask], a_arr[mask], R_s_arr[mask],
+                u1_arr_p[mask], u2_arr_p[mask],
+                eccs[mask], argps[mask],
+                companion_fluxratio=ext_lc['fluxratios'][idxs[mask]],
+                companion_is_host=False,
+                exptime=ext_lc['exptime'], nsamples=nsamples
+            )
+            lnL = lnL + ext_lc['lnL']
+
     else:
         for i in range(N):
             if Ptra[i] <= 1:
@@ -2284,56 +2269,32 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (external_lc_file != None):
-        idx_p = (-lnL_external_lc).argsort()[:N_samples]
-        Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
-            ))
-        lnZ_p = np.log(Z_p)
-        res = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'u1_p': np.full(N_samples, u1_p),
-            'u2_p': np.full(N_samples, u2_p),
-            'P_orb': P_orb[idx],
-            'inc': incs[idx],
-            'b': b[idx],
-            'R_p': rps[idx],
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': np.zeros(N_samples),
-            'R_EB': np.zeros(N_samples),
-            "M_comp": masses_comp[idxs[idx]],
-            "R_comp": np.zeros(N_samples), # not provided by Trilegal
-            'fluxratio_EB': np.zeros(N_samples),
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'fluxratio_EB_p': np.zeros(N_samples),
-            'fluxratio_comp_p': fluxratios_comp_lc_band[idxs[idx]],
-            'lnZ': lnZ,
-            'lnZ_p': lnZ_p
-            }
-    else:
-        res = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'P_orb': P_orb[idx],
-            'inc': incs[idx],
-            'b': b[idx],
-            'R_p': rps[idx],
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': np.zeros(N_samples),
-            'R_EB': np.zeros(N_samples),
-            "M_comp": masses_comp[idxs[idx]],
-            "R_comp": np.zeros(N_samples), # not provided by Trilegal
-            'fluxratio_EB': np.zeros(N_samples),
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'lnZ': lnZ
-            }
+    res = {
+        'M_s': np.full(N_samples, M_s),
+        'R_s': np.full(N_samples, R_s),
+        'u1': np.full(N_samples, u1),
+        'u2': np.full(N_samples, u2),
+        'P_orb': P_orb[idx],
+        'inc': incs[idx],
+        'b': b[idx],
+        'R_p': rps[idx],
+        'ecc': eccs[idx],
+        'argp': argps[idx],
+        'M_EB': np.zeros(N_samples),
+        'R_EB': np.zeros(N_samples),
+        'M_comp': masses_comp[idxs[idx]],
+        'R_comp': np.zeros(N_samples), # not provided by Trilegal
+        'fluxratio_EB': np.zeros(N_samples),
+        'fluxratio_comp': fluxratios_comp[idxs[idx]],
+        'lnZ': lnZ
+    }
+
+    # Add results for each external light curve
+    for i, ext_lc in enumerate(external_lcs):
+        res[f'u1_p{i+1}'] = np.full(N_samples, ext_lc['u1'])
+        res[f'u2_p{i+1}'] = np.full(N_samples, ext_lc['u2'])
+        res[f'fluxratio_comp_p{i+1}'] = ext_lc['fluxratios'][idxs[idx]]
+
     return res
 
 
@@ -2347,10 +2308,11 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_file: str = None,
-            filt_lc: str = "J", lnz_const: int = 600):
+            external_lc_files: list = None,
+            filt_lcs: list = None, lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DEB scenario.
+    Now supports up to four external light curves with different filters.
     Args:
         time (numpy array): Time of each data point
                             [days from transit midpoint].
@@ -2376,6 +2338,8 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         flatpriors (bool): Assume flat Rp and Porb planet priors?
         exptime (float): Exposure time of observations [days].
         nsamples (int): Sampling rate for supersampling.
+        external_lc_files (List[str]): List of external light curve file paths (up to 4).
+        filt_lcs (List[str]): List of corresponding filters for external light curves.
     Returns:
         res (dict): Best-fit properties and marginal likelihood.
         res_twin (dict): Best-fit properties and marginal likelihood.
@@ -2414,75 +2378,6 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
-    if (external_lc_file != None):
-
-        if filt_lc == "J":
-            ldc_P_Zs = ldc_J_Zs
-            ldc_P_Teffs = ldc_J_Teffs
-            ldc_P_loggs = ldc_J_loggs
-            ldc_P_u1s = ldc_J_u1s
-            ldc_P_u2s = ldc_J_u2s
-
-        elif filt_lc == "H":
-            ldc_P_Zs = ldc_H_Zs
-            ldc_P_Teffs = ldc_H_Teffs
-            ldc_P_loggs = ldc_H_loggs
-            ldc_P_u1s = ldc_H_u1s
-            ldc_P_u2s = ldc_H_u2s
-
-        elif filt_lc == "K":
-            ldc_P_Zs = ldc_Kband_Zs
-            ldc_P_Teffs = ldc_Kband_Teffs
-            ldc_P_loggs = ldc_Kband_loggs
-            ldc_P_u1s = ldc_Kband_u1s
-            ldc_P_u2s = ldc_Kband_u2s
-
-        elif filt_lc == "g":
-            ldc_P_Zs = ldc_gband_Zs
-            ldc_P_Teffs = ldc_gband_Teffs
-            ldc_P_loggs = ldc_gband_loggs
-            ldc_P_u1s = ldc_gband_u1s
-            ldc_P_u2s = ldc_gband_u2s
-
-        elif filt_lc == "r":
-            ldc_P_Zs = ldc_rband_Zs
-            ldc_P_Teffs = ldc_rband_Teffs
-            ldc_P_loggs = ldc_rband_loggs
-            ldc_P_u1s = ldc_rband_u1s
-            ldc_P_u2s = ldc_rband_u2s
-
-        elif filt_lc == "i":
-            ldc_P_Zs = ldc_iband_Zs
-            ldc_P_Teffs = ldc_iband_Teffs
-            ldc_P_loggs = ldc_iband_loggs
-            ldc_P_u1s = ldc_iband_u1s
-            ldc_P_u2s = ldc_iband_u2s
-
-        elif filt_lc == "z":
-            ldc_P_Zs = ldc_zband_Zs
-            ldc_P_Teffs = ldc_zband_Teffs
-            ldc_P_loggs = ldc_zband_loggs
-            ldc_P_u1s = ldc_zband_u1s
-            ldc_P_u2s = ldc_zband_u2s
-
-        this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
-        this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))] # get T_eff from the table that is most similar to the star's T_eff
-        this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
-        mask_p = (
-            (ldc_P_Zs == this_Z_p)
-            & (ldc_P_Teffs == this_Teff_p)
-            & (ldc_P_loggs == this_logg_p)
-            )
-        u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p] # gets the coefficients from the table for the corresponding T, logg and Z vals.
-
-        external_lc = np.loadtxt(external_lc_file)
-        time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
-        sigma_p = np.mean(fluxerr_p)
-        lnsigma_p = np.log(sigma_p)
-        exptime_p = np.min(np.diff(time_p))
-        lnL_external_lc = np.full(N, -np.inf)
-        lnL_external_lc_twin = np.full(N, -np.inf)
-
     # sample from inc and q prior distributions
     incs = sample_inc(np.random.rand(N))
     qs = sample_q(np.random.rand(N), M_s)
@@ -2500,13 +2395,6 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         / (flux_relation(masses) + flux_relation(np.array([M_s])))
         )
 
-    if (external_lc_file != None):
-        # print(filt_lc)
-        fluxratios_lc_band = (
-            flux_relation(masses, filt = filt_lc)
-            / (flux_relation(masses, filt = filt_lc) + flux_relation(np.array([M_s]), filt = filt_lc))
-            )
-
     # determine background star population properties
     (Tmags_comp, masses_comp, loggs_comp, Teffs_comp, Zs_comp,
         Jmags_comp, Hmags_comp, Kmags_comp, gmags_comp, rmags_comp, imags_comp, zmags_comp) = (
@@ -2518,41 +2406,92 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
     delta_Kmags = Kmag - Kmags_comp
     fluxratios_comp = 10**(delta_mags/2.5) / (1 + 10**(delta_mags/2.5))
 
-    # checks if the TIC returns nans for griz mags
+    delta_mags_map = {
+                    "delta_TESSmags":delta_mags,
+                    "delta_Jmags":delta_Jmags,
+                    "delta_Hmags":delta_Hmags,
+                    "delta_Kmags":delta_Hmags,
+                    }
+
+    # Check if the TIC returns nans for griz mags
     no_sdss_mags = (np.isnan(gmag)) and (np.isnan(rmag)) and \
         (np.isnan(imag)) and (np.isnan(zmag))
 
+    # if we are using sdss filters, but the magnitude of the target in these filters is unknown
+    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+        print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
+        gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
+        print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
 
-    if (external_lc_file != None) and (filt_lc in ['g', 'r', 'i', 'z']) and (no_sdss_mags):
-          print(f'Warnning: no sdss magnitudes available from TIC. Using empirical relations to estimate {filt_lc} mag')
-          gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
-          print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
-          delta_gmags = gmag - gmags_comp
-          delta_rmags = rmag - rmags_comp
-          delta_imags = imag - imags_comp
-          delta_zmags = zmag - zmags_comp
+    # if we are using sdss filters, compute the delta sdss mags
+    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
+        delta_gmags = gmag - gmags_comp
+        delta_rmags = rmag - rmags_comp
+        delta_imags = imag - imags_comp
+        delta_zmags = zmag - zmags_comp
 
-    if (external_lc_file != None):
-        if filt_lc == "J":
-            fluxratios_comp_lc_band = 10**(delta_Jmags/2.5) / (1 + 10**(delta_Jmags/2.5))
+        #add to delta mags dictionary
+        delta_mags_map['delta_gmags'] = delta_gmags
+        delta_mags_map['delta_rmags'] = delta_rmags
+        delta_mags_map['delta_imags'] = delta_imags
+        delta_mags_map['delta_zmags'] = delta_zmags
 
-        elif filt_lc == "H":
-            fluxratios_comp_lc_band = 10**(delta_Hmags/2.5) / (1 + 10**(delta_Hmags/2.5))
+    external_lcs = []
+    if external_lc_files and filt_lcs:
+        parallel = True  # Force parallel execution when external LCs are provided
+        if len(external_lc_files) != len(filt_lcs):
+            raise ValueError("Number of external LC files must match number of filters")
+        if len(external_lc_files) > 4:
+            raise ValueError("Maximum of 4 external light curves supported")
 
-        elif filt_lc == "K":
-            fluxratios_comp_lc_band = 10**(delta_Kmags/2.5) / (1 + 10**(delta_Kmags/2.5))
+        for lc_file, filt in zip(external_lc_files, filt_lcs):
+            ldc_map = {
+                "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
+                "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
+                "K": (ldc_Kband_Zs, ldc_Kband_Teffs, ldc_Kband_loggs, ldc_Kband_u1s, ldc_Kband_u2s),
+                "g": (ldc_gband_Zs, ldc_gband_Teffs, ldc_gband_loggs, ldc_gband_u1s, ldc_gband_u2s),
+                "r": (ldc_rband_Zs, ldc_rband_Teffs, ldc_rband_loggs, ldc_rband_u1s, ldc_rband_u2s),
+                "i": (ldc_iband_Zs, ldc_iband_Teffs, ldc_iband_loggs, ldc_iband_u1s, ldc_iband_u2s),
+                "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
+            }
 
-        elif filt_lc == "g":
-            fluxratios_comp_lc_band = 10**(delta_gmags/2.5) / (1 + 10**(delta_gmags/2.5))
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
 
-        elif filt_lc == "r":
-            fluxratios_comp_lc_band = 10**(delta_rmags/2.5) / (1 + 10**(delta_rmags/2.5))
+            this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
+            this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
+            this_logg_p = ldc_P_loggs[np.argmin(np.abs(ldc_P_loggs-logg))]
+            mask_p = (
+                (ldc_P_Zs == this_Z_p)
+                & (ldc_P_Teffs == this_Teff_p)
+                & (ldc_P_loggs == this_logg_p)
+            )
+            u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p]
 
-        elif filt_lc == "i":
-            fluxratios_comp_lc_band = 10**(delta_imags/2.5) / (1 + 10**(delta_imags/2.5))
+            external_lc = np.loadtxt(lc_file)
+            time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
+            sigma_p = np.mean(fluxerr_p)
+            lnsigma_p = np.log(sigma_p)
+            exptime_p = np.min(np.diff(time_p))
 
-        elif filt_lc == "z":
-            fluxratios_comp_lc_band = 10**(delta_zmags/2.5) / (1 + 10**(delta_zmags/2.5))
+            fluxratios_lc_band = (
+                flux_relation(masses, filt = filt)
+                / (flux_relation(masses, filt = filt) + flux_relation(np.array([M_s]), filt = filt))
+                )
+            delta_mags_p = delta_mags_map[f"delta_{filt}mags"]
+            fluxratios_comp_lc_band = 10**(delta_mags_p/2.5) / (1 + 10**(delta_mags_p/2.5))
+            external_lcs.append({
+                'time': time_p,
+                'flux': flux_p,
+                'sigma': sigma_p,
+                'lnsigma': lnsigma_p,
+                'exptime': exptime_p,
+                'u1': u1_p,
+                'u2': u2_p,
+                'fluxratios':fluxratios_lc_band,
+                'fluxratios_comp': fluxratios_comp_lc_band,
+                'lnL': np.full(N, -np.inf),
+                'lnL_twin': np.full(N, -np.inf)
+            })
 
     N_comp = Tmags_comp.shape[0]
     # draw random sample of background stars
@@ -2560,14 +2499,8 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
 
     # calculate priors for companions
     if contrast_curve_file is None:
-        if (external_lc_file != None):
-            print(f"Using {filt_lc} band flux ratios for lnprior_companion")
-            delta_mags = 2.5*np.log10(
-                fluxratios_comp_lc_band[idxs]/(1-fluxratios_comp_lc_band[idxs])
-                )
-        else:
-            # use TESS/Vis band flux ratios
-            delta_mags = 2.5*np.log10(
+        # use TESS/Vis band flux ratios
+        delta_mags = 2.5*np.log10(
                 fluxratios_comp[idxs]/(1-fluxratios_comp[idxs])
                 )
         lnprior_companion = np.full(
@@ -2633,19 +2566,22 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (external_lc_file != None):
-            u1_arr_p = np.full(N, u1_p)
-            u2_arr_p = np.full(N, u2_p)
-            lnL_external_lc[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_p(
-                    time_p, flux_p, sigma_p, radii[mask], fluxratios_lc_band[mask],
-                    P_orb[mask], incs[mask], a[mask], R_s_arr[mask],
-                    u1_arr_p[mask], u2_arr_p[mask],
-                    eccs[mask], argps[mask],
-                    companion_fluxratio=fluxratios_comp_lc_band[idxs[mask]],
-                    companion_is_host=False,
-                    exptime=exptime_p, nsamples=nsamples
-                    )
-            lnL = lnL+lnL_external_lc
+
+        for ext_lc in external_lcs:
+            u1_arr_p = np.full(N, ext_lc['u1'])
+            u2_arr_p = np.full(N, ext_lc['u2'])
+            ext_lc['lnL'][mask] = -0.5*ln2pi - ext_lc['lnsigma'] - lnL_EB_p(
+                ext_lc['time'], ext_lc['flux'], ext_lc['sigma'], radii[mask],
+                ext_lc['fluxratios'][mask],
+                P_orb[mask], incs[mask], a[mask], R_s_arr[mask],
+                u1_arr_p[mask], u2_arr_p[mask],
+                eccs[mask], argps[mask],
+                companion_fluxratio=ext_lc['fluxratios_comp'][idxs[mask]],
+                companion_is_host=False,
+                exptime=ext_lc['exptime'], nsamples=nsamples
+            )
+            lnL = lnL + ext_lc['lnL']
+
         # q >= 0.95
         # find minimum inclination each planet can have while transiting
         inc_min = np.full(N, 90.)
@@ -2667,19 +2603,22 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                     companion_is_host=False,
                     exptime=exptime, nsamples=nsamples
                     )
-        if (external_lc_file != None):
-            u1_arr_p = np.full(N, u1_p)
-            u2_arr_p = np.full(N, u2_p)
-            lnL_external_lc_twin[mask] = -0.5*ln2pi - lnsigma_p - lnL_EB_twin_p(
-                    time_p, flux_p, sigma_p, radii[mask], fluxratios_lc_band[mask],
-                    2*P_orb[mask], incs[mask], a_twin[mask], R_s_arr[mask],
-                    u1_arr_p[mask], u2_arr_p[mask],
-                    eccs[mask], argps[mask],
-                    companion_fluxratio=fluxratios_comp_lc_band[idxs[mask]],
-                    companion_is_host=False,
-                    exptime=exptime_p, nsamples=nsamples
-                    )
-            lnL_twin = lnL_twin+lnL_external_lc_twin
+
+        for ext_lc in external_lcs:
+            u1_arr_p = np.full(N, ext_lc['u1'])
+            u2_arr_p = np.full(N, ext_lc['u2'])
+            ext_lc['lnL_twin'][mask] = -0.5*ln2pi - ext_lc['lnsigma'] - lnL_EB_twin_p(
+                ext_lc['time'], ext_lc['flux'], ext_lc['sigma'], radii[mask],
+                ext_lc['fluxratios'][mask],
+                2*P_orb[mask], incs[mask], a_twin[mask], R_s_arr[mask],
+                u1_arr_p[mask], u2_arr_p[mask],
+                eccs[mask], argps[mask],
+                companion_fluxratio=ext_lc['fluxratios_comp'][idxs[mask]],
+                companion_is_host=False,
+                exptime=ext_lc['exptime'], nsamples=nsamples
+            )
+            lnL_twin = lnL_twin + ext_lc['lnL_twin']
+
     else:
         for i in range(N):
             # q < 0.95
@@ -2722,52 +2661,33 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (external_lc_file != None):
-        idx_p = (-lnL_external_lc).argsort()[:N_samples]
-        Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_external_lc + lnprior_companion + lnz_const )  # where does 600 come from?
-            ))
-        lnZ_p = np.log(Z_p)
-        res = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'u1_p': np.full(N_samples, u1_p),
-            'u2_p': np.full(N_samples, u2_p),
-            'P_orb': P_orb[idx],
-            'inc': incs[idx],
-            'b': b[idx],
-            'R_p': np.zeros(N_samples),
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': masses[idx],
-            'R_EB': radii[idx],
-            'fluxratio_EB': fluxratios[idx],
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'fluxratio_EB_p': fluxratios_lc_band[idx],
-            'fluxratio_comp_p': fluxratios_comp_lc_band[idxs[idx]],
-            'lnZ': lnZ,
-            'lnZ_p': lnZ_p
-            }
-    else:
-        res = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'P_orb': P_orb[idx],
-            'inc': incs[idx],
-            'b': b[idx],
-            'R_p': np.zeros(N_samples),
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': masses[idx],
-            'R_EB': radii[idx],
-            'fluxratio_EB': fluxratios[idx],
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'lnZ': lnZ
-            }
+    res = {
+        'M_s': np.full(N_samples, M_s),
+        'R_s': np.full(N_samples, R_s),
+        'u1': np.full(N_samples, u1),
+        'u2': np.full(N_samples, u2),
+        'P_orb': P_orb[idx],
+        'inc': incs[idx],
+        'b': b[idx],
+        'R_p': np.zeros(N_samples),
+        'ecc': eccs[idx],
+        'argp': argps[idx],
+        'M_EB': masses[idx],
+        'R_EB': radii[idx],
+        'M_comp':masses_comp[idxs[idx]],
+        'R_comp': np.zeros(N_samples), # not provided by Trilegal
+        'fluxratio_EB': fluxratios[idx],
+        'fluxratio_comp': fluxratios_comp[idxs[idx]],
+        'lnZ': lnZ
+        }
+
+    # Add results for each external light curve
+    for i, ext_lc in enumerate(external_lcs):
+        res[f'u1_p{i+1}'] = np.full(N_samples, u1)
+        res[f'u2_p{i+1}'] = np.full(N_samples, u2)
+        res[f'fluxratio_EB_p{i+1}'] = ext_lc['fluxratios'][idx]
+        res[f'fluxratio_comp_p{i+1}'] = ext_lc['fluxratios_comp'][idxs[idx]]
+
     # results for q >= 0.95 and 2xP_orb
     N_samples = 1000
     idx = (-lnL_twin).argsort()[:N_samples]
@@ -2778,52 +2698,34 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         )
     lnZ = np.log(Z)
 
-    if (external_lc_file != None):
-        idx_p = (-lnL_external_lc_twin).argsort()[:N_samples]
-        Z_p = np.mean(np.nan_to_num(
-            np.exp(lnL_external_lc_twin + lnprior_companion + lnz_const )  # where does 600 come from?
-            ))
-        lnZ_p = np.log(Z_p)
-        res_twin = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'u1_p': np.full(N_samples, u1_p),
-            'u2_p': np.full(N_samples, u2_p),
-            'P_orb': 2*P_orb[idx],
-            'inc': incs[idx],
-            'b': b_twin[idx],
-            'R_p': np.zeros(N_samples),
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': masses[idx],
-            'R_EB': radii[idx],
-            'fluxratio_EB': fluxratios[idx],
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'fluxratio_EB_p': fluxratios_lc_band[idx],
-            'fluxratio_comp_p': fluxratios_comp_lc_band[idxs[idx]],
-            'lnZ': lnZ,
-            'lnZ_p': lnZ_p
-            }
-    else:
-        res_twin = {
-            'M_s': np.full(N_samples, M_s),
-            'R_s': np.full(N_samples, R_s),
-            'u1': np.full(N_samples, u1),
-            'u2': np.full(N_samples, u2),
-            'P_orb': 2*P_orb[idx],
-            'inc': incs[idx],
-            'b': b_twin[idx],
-            'R_p': np.zeros(N_samples),
-            'ecc': eccs[idx],
-            'argp': argps[idx],
-            'M_EB': masses[idx],
-            'R_EB': radii[idx],
-            'fluxratio_EB': fluxratios[idx],
-            'fluxratio_comp': fluxratios_comp[idxs[idx]],
-            'lnZ': lnZ
-            }
+    res_twin = {
+        'M_s': np.full(N_samples, M_s),
+        'R_s': np.full(N_samples, R_s),
+        'u1': np.full(N_samples, u1),
+        'u2': np.full(N_samples, u2),
+        'P_orb': 2*P_orb[idx],
+        'inc': incs[idx],
+        'b': b_twin[idx],
+        'R_p': np.zeros(N_samples),
+        'ecc': eccs[idx],
+        'argp': argps[idx],
+        'M_EB': masses[idx],
+        'R_EB': radii[idx],
+        'M_comp':masses_comp[idxs[idx]],
+        'R_comp': np.zeros(N_samples), # not provided by Trilegal
+        'fluxratio_EB': fluxratios[idx],
+        'fluxratio_comp': fluxratios_comp[idxs[idx]],
+        'lnZ': lnZ
+        }
+
+    # Add results for each external light curve
+    # idx is different from the previous idx
+    for i, ext_lc in enumerate(external_lcs):
+        res_twin[f'u1_p{i+1}'] = np.full(N_samples, u1)
+        res_twin[f'u2_p{i+1}'] = np.full(N_samples, u2)
+        res_twin[f'fluxratio_EB_p{i+1}'] = ext_lc['fluxratios'][idx]
+        res_twin[f'fluxratio_comp_p{i+1}'] = ext_lc['fluxratios_comp'][idxs[idx]]
+
     return res, res_twin
 
 
