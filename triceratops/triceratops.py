@@ -1315,11 +1315,10 @@ class target:
                                 + "probability for " + str(ID) + "."
                                 )
 
-                        res = lnZ_BTP(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff,
-                            Bmag, Vmag,
-                            gmag, rmag, imag, zmag,
+                        res = lnZ_BTP(time, flux, flux_err,
+                            P_orb, M_s, R_s, Teff,
+                            Bmag, Vmag, gmag,
+                            rmag, imag, zmag,
                             Tmag, Jmag, Hmag, Kmag,
                             trilegal_fname,
                             contrast_curve_file, filt,
