@@ -5,7 +5,7 @@ from pkg_resources import resource_filename
 
 from .likelihoods import *
 from .priors import *
-from .funcs import stellar_relations, flux_relation, estimate_sdss_magnitudes
+from .funcs import stellar_relations, flux_relation, estimate_sdss_magnitudes, renorm_flux
 
 np.seterr(divide='ignore')
 
@@ -109,7 +109,9 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TTP scenario.
     Now supports up to four external light curves with different filters.
@@ -180,7 +182,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -191,7 +193,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -208,6 +210,16 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             sigma_p = np.mean(fluxerr_p)
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
+
+            if renorm_external_lcs == True:
+                print("flux contribution:", external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0])
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
 
             external_lcs.append({
                 'time': time_p,
@@ -325,8 +337,10 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             Z: float, N: int = 1000000, parallel: bool = False,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
-            external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            external_lc_files: list = None, filt_lcs: list = None,
+            renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the TEB scenario.
     Now supports up to four external light curves with different filters.
@@ -397,7 +411,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -408,7 +422,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -426,6 +440,15 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                print("flux contribution:", external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0])
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             external_lcs.append({
                 'time': time_p,
                 'flux': flux_p,
@@ -436,7 +459,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 'u2': u2_p,
                 'lnL': np.full(N, -np.inf),
                 'lnL_twin': np.full(N, -np.inf),
-                'filter': filt
+                'filter': filt_lc
             })
 
     # sample from prior distributions
@@ -653,7 +676,9 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             molusc_file: str = None, external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PTP scenario.
     Now supports up to four external light curves with different filters.
@@ -712,7 +737,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -723,7 +748,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -737,6 +762,14 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             external_lcs.append({
                 'time': time_p,
                 'flux': flux_p,
@@ -746,7 +779,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 'u1': u1_p,
                 'u2': u2_p,
                 'lnL': np.full(N, -np.inf),
-                'filter': filt
+                'filter': filt_lc
             })
 
     if molusc_file is None:
@@ -885,7 +918,9 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             molusc_file: str = None, external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the PEB scenario.
     Now supports multiple external light curves with different filters.
@@ -947,7 +982,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -958,7 +993,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -972,6 +1007,14 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             external_lcs.append({
                 'time': time_p,
                 'flux': flux_p,
@@ -982,7 +1025,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 'u2': u2_p,
                 'lnL': np.full(N, -np.inf),
                 'lnL_twin': np.full(N, -np.inf),
-                'filter': filt
+                'filter': filt_lc
             })
 
     # sample from prior distributions
@@ -1255,7 +1298,9 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             molusc_file: str = None, external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the STP scenario.
     Now supports multiple external light curves with different filters.
@@ -1367,7 +1412,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J, ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H, ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -1378,7 +1423,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband, ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P, ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P, ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
             ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
             Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
             loggs_at_Z_p = np.array(ldc_at_Z_p.logg, dtype=float)
@@ -1396,9 +1441,17 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             fluxratios_comp_lc_band = (
-                flux_relation(masses_comp, filt=filt)
-                / (flux_relation(masses_comp, filt=filt) + flux_relation(np.array([M_s]), filt=filt))
+                flux_relation(masses_comp, filt=filt_lc)
+                / (flux_relation(masses_comp, filt=filt_lc) + flux_relation(np.array([M_s]), filt=filt_lc))
             )
 
             external_lcs.append({
@@ -1411,7 +1464,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 'u2s_comp': u2s_comp_p,
                 'fluxratios': fluxratios_comp_lc_band,
                 'lnL': np.full(N, -np.inf),
-                'filter': filt
+                'filter': filt_lc
             })
 
     # calculate priors for companions
@@ -1557,7 +1610,9 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             molusc_file: str = None, external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the SEB scenario.
     Args:
@@ -1687,7 +1742,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J, ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H, ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -1698,7 +1753,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband, ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P, ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P, ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
             ldc_at_Z_p = ldc_P[(ldc_P_Zs == ldc_P_Zs[np.abs(ldc_P_Zs - Z).argmin()])]
             Teffs_at_Z_p = np.array(ldc_at_Z_p.Teff, dtype=int)
             loggs_at_Z_p = np.array(ldc_at_Z_p.logg, dtype=float)
@@ -1716,14 +1771,22 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             fluxratios_lc_band = (
-                flux_relation(masses, filt=filt)
-                / (flux_relation(masses, filt=filt) + flux_relation(np.array([M_s]), filt=filt))
+                flux_relation(masses, filt=filt_lc)
+                / (flux_relation(masses, filt=filt_lc) + flux_relation(np.array([M_s]), filt=filt_lc))
                 )
 
             fluxratios_comp_lc_band = (
-                flux_relation(masses_comp, filt=filt)
-                / (flux_relation(masses_comp, filt=filt) + flux_relation(np.array([M_s]), filt=filt))
+                flux_relation(masses_comp, filt=filt_lc)
+                / (flux_relation(masses_comp, filt=filt_lc) + flux_relation(np.array([M_s]), filt=filt_lc))
             )
 
             external_lcs.append({
@@ -1738,7 +1801,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 'fluxratios_comp': fluxratios_comp_lc_band,
                 'lnL': np.full(N, -np.inf),
                 'lnL_twin': np.full(N, -np.inf),
-                'filter': filt
+                'filter': filt_lc
             })
 
     # calculate priors for companions
@@ -1991,7 +2054,9 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DTP scenario.
     Now supports up to four external light curves with different filters.
@@ -2083,13 +2148,13 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         (np.isnan(imag)) and (np.isnan(zmag))
 
     # if we are using sdss filters, but the magnitude of the target in these filters is unknown
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs) and no_sdss_mags:
         print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
         gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
         print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
 
     # if we are using sdss filters, compute the delta sdss mags
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs):
         delta_gmags = gmag - gmags_comp
         delta_rmags = rmag - rmags_comp
         delta_imags = imag - imags_comp
@@ -2109,7 +2174,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -2120,7 +2185,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -2138,7 +2203,15 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
-            delta_mags_p = delta_mags_map[f"delta_{filt}mags"]
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
+            delta_mags_p = delta_mags_map[f"delta_{filt_lc}mags"]
             fluxratios_comp_lc_band = 10**(delta_mags_p/2.5) / (1 + 10**(delta_mags_p/2.5))
 
             external_lcs.append({
@@ -2305,7 +2378,9 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the DEB scenario.
     Now supports up to four external light curves with different filters.
@@ -2414,13 +2489,13 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         (np.isnan(imag)) and (np.isnan(zmag))
 
     # if we are using sdss filters, but the magnitude of the target in these filters is unknown
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs) and no_sdss_mags:
         print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
         gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
         print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
 
     # if we are using sdss filters, compute the delta sdss mags
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs):
         delta_gmags = gmag - gmags_comp
         delta_rmags = rmag - rmags_comp
         delta_imags = imag - imags_comp
@@ -2440,7 +2515,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -2451,7 +2526,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
             this_Teff_p = ldc_P_Teffs[np.argmin(np.abs(ldc_P_Teffs-Teff))]
@@ -2469,11 +2544,19 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
             fluxratios_lc_band = (
-                flux_relation(masses, filt = filt)
-                / (flux_relation(masses, filt = filt) + flux_relation(np.array([M_s]), filt = filt))
+                flux_relation(masses, filt = filt_lc)
+                / (flux_relation(masses, filt = filt_lc) + flux_relation(np.array([M_s]), filt = filt_lc))
                 )
-            delta_mags_p = delta_mags_map[f"delta_{filt}mags"]
+            delta_mags_p = delta_mags_map[f"delta_{filt_lc}mags"]
             fluxratios_comp_lc_band = 10**(delta_mags_p/2.5) / (1 + 10**(delta_mags_p/2.5))
             external_lcs.append({
                 'time': time_p,
@@ -2736,7 +2819,9 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BTP scenario.
     Now supports up to four external light curves with different filters.
@@ -2833,13 +2918,13 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         (np.isnan(imag)) and (np.isnan(zmag))
 
     # if we are using sdss filters, but the magnitude of the target in these filters is unknown
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs) and no_sdss_mags:
         print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
         gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
         print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
 
     # if we are using sdss filters, compute the delta sdss mags
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs):
         delta_gmags = gmag - gmags_comp
         delta_rmags = rmag - rmags_comp
         delta_imags = imag - imags_comp
@@ -2859,7 +2944,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         if len(external_lc_files) > 4:
             raise ValueError("Maximum of 4 external light curves supported")
 
-        for lc_file, filt in zip(external_lc_files, filt_lcs):
+        for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
                 "J": (ldc_J_Zs, ldc_J_Teffs, ldc_J_loggs, ldc_J_u1s, ldc_J_u2s),
                 "H": (ldc_H_Zs, ldc_H_Teffs, ldc_H_loggs, ldc_H_u1s, ldc_H_u2s),
@@ -2870,7 +2955,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
 
-            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt]
+            ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             external_lc = np.loadtxt(lc_file)
             time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
@@ -2878,7 +2963,15 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
 
-            delta_mags_p = delta_mags_map[f"delta_{filt}mags"]
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
+
+            delta_mags_p = delta_mags_map[f"delta_{filt_lc}mags"]
             fluxratios_comp_lc_band = 10**(delta_mags_p/2.5) / (1 + 10**(delta_mags_p/2.5))
 
             u1s_comp_p, u2s_comp_p = np.zeros(N_comp), np.zeros(N_comp)
@@ -3061,7 +3154,9 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             mission: str = "TESS", flatpriors: bool = False,
             exptime: float = 0.00139, nsamples: int = 20,
             external_lc_files: list = None,
-            filt_lcs: list = None, lnz_const: int = 600):
+            filt_lcs: list = None, renorm_external_lcs: bool = False,
+            external_fluxes_of_stars: dict = None,
+            lnz_const: int = 600):
     """
     Calculates the marginal likelihood of the BEB scenario.
     Now supports up to four external light curves with different filters.
@@ -3196,13 +3291,13 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         (np.isnan(imag)) and (np.isnan(zmag))
 
     # if we are using sdss filters, but the magnitude of the target in these filters is unknown
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs) and no_sdss_mags:
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs) and no_sdss_mags:
         print('Warning: no sdss magnitudes available from TIC. Using empirical relations to estimate g, r, i, z mags')
         gmag, rmag, imag, zmag = estimate_sdss_magnitudes(Bmag, Vmag, Jmag)
         print("Using gmag, rmag, imag, zmag: ", gmag, rmag, imag, zmag)
 
     # if we are using sdss filters, compute the delta sdss mags
-    if external_lc_files and any(filt in ['g', 'r', 'i', 'z'] for filt in filt_lcs):
+    if external_lc_files and any(filt_lc in ['g', 'r', 'i', 'z'] for filt_lc in filt_lcs):
         delta_gmags = gmag - gmags_comp
         delta_rmags = rmag - rmags_comp
         delta_imags = imag - imags_comp
@@ -3259,6 +3354,14 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             sigma_p = np.mean(fluxerr_p)
             lnsigma_p = np.log(sigma_p)
             exptime_p = np.min(np.diff(time_p))
+
+            if renorm_external_lcs == True:
+                flux_p, fluxerr_p = renorm_flux(
+                    flux_p, fluxerr_p,
+                    external_fluxes_of_stars[f"fluxratio_{filt_lc}"].values[0]
+                    )
+                sigma_p = np.mean(fluxerr_p)
+                lnsigma_p = np.log(sigma_p)
 
             fluxratios_comp_bound_lc_band = (
                 flux_relation(masses_comp[idxs], filt=filt_lc)

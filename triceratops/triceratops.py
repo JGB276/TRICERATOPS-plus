@@ -105,8 +105,8 @@ class target:
             )
         tic_result = df
         new_df = df[
-            "ID", "Bmag", "Vmag", "GAIAmag", "Tmag", "Jmag", "Hmag", "Kmag", "gmag", "rmag", "imag", "zmag",
-            "ra", "dec", "mass", "rad", "Teff", "plx" # can add d
+            "ID", "Bmag", "Vmag", "Tmag", "Jmag", "Hmag", "Kmag", "gmag", "rmag", "imag", "zmag",
+            "ra", "dec", "mass", "rad", "Teff", "d", "plx" # can add "GAIAmag"
             ]
         stars = new_df.to_pandas()
 
@@ -702,12 +702,29 @@ class target:
         best_R_comp = np.zeros(N_scenarios) # for all with dilution
         #best_T_comp = np.zeros(N_scenarios) # for all with dilution
         lnZ = np.zeros(N_scenarios)
+        # if there are stars inside the external light curve aperture
+        if (external_lc_files != None and len(filtered_stars["ID"].values) > 1):
+            renorm_external_lcs = True
+            filter_col = [col for col in filtered_stars if (col == 'ID' or col.startswith('fluxratio'))]
+            # create a subset of the filtered stars dictionary
+            # only contains the ID, and flux contribution of each star in each filter
+            external_fluxes_of_stars = filtered_stars[filter_col].reset_index(drop=True)
+            print("renormalizing external light curves:", renorm_external_lcs)
+        else:
+            renorm_external_lcs = False
+            #external_fluxes_of_stars = None
+
 
         for i, ID in enumerate(filtered_stars["ID"].values):
             # subtract flux from other stars in the aperture
             flux, flux_err = renorm_flux(
                 flux_0, flux_err_0, filtered_stars["fluxratio"].values[i]
                 )
+
+            if renorm_external_lcs == True:
+                external_flux_of_star = external_fluxes_of_stars[external_fluxes_of_stars.ID == ID]
+            else:
+                external_flux_of_star = None
 
             M_s = filtered_stars["mass"].values[i]
             R_s = filtered_stars["rad"].values[i]
@@ -777,6 +794,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_TTP = res
@@ -829,6 +847,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_TEB = res
@@ -905,6 +924,7 @@ class target:
                             exptime, nsamples,
                             molusc_file,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_PTP = res
@@ -962,6 +982,7 @@ class target:
                             exptime, nsamples,
                             molusc_file,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_PEB = res
@@ -1043,6 +1064,7 @@ class target:
                             exptime, nsamples,
                             molusc_file,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_STP = res
@@ -1101,6 +1123,7 @@ class target:
                             exptime, nsamples,
                             molusc_file,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_SEB = res
@@ -1185,6 +1208,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_DTP = res
@@ -1244,6 +1268,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_DEB = res
@@ -1326,6 +1351,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_BTP = res
@@ -1386,6 +1412,7 @@ class target:
                             flatpriors,
                             exptime, nsamples,
                             external_lc_files, filt_lcs,
+                            renorm_external_lcs, external_flux_of_star,
                             lnz_const)
 
                         # self.res_BEB = res
@@ -1466,7 +1493,10 @@ class target:
                     M_s, R_s, Teff, Z,
                     N, parallel, self.mission,
                     flatpriors,
-                    exptime, nsamples, None, lnz_const
+                    exptime, nsamples,
+                    external_lc_files, filt_lcs,
+                    renorm_external_lcs, external_flux_of_star,
+                    lnz_const
                     )
                 j = 15 + 3*(i-1)
                 targets[j] = ID
@@ -1493,7 +1523,10 @@ class target:
                     M_s, R_s, Teff, Z,
                     N, parallel, self.mission,
                     flatpriors,
-                    exptime, nsamples, None, lnz_const
+                    exptime, nsamples,
+                    external_lc_files, filt_lcs,
+                    renorm_external_lcs, external_flux_of_star,
+                    lnz_const
                     )
                 j = 16 + 3*(i-1)
                 targets[j] = ID
