@@ -1209,19 +1209,20 @@ class target:
                                 )
 
                         res = lnZ_DTP(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            Bmag, Vmag,
-                            gmag, rmag, imag, zmag,
-                            Tmag, Jmag, Hmag, Kmag,
-                            trilegal_fname,
-                            contrast_curve_file, filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            Bmag=Bmag, Vmag=Vmag,
+                            gmag=gmag, rmag=rmag, imag=imag, zmag=zmag,
+                            Tmag=Tmag, Jmag=Jmag, Hmag=Hmag, Kmag=Kmag,
+                            trilegal_fname=trilegal_fname,
+                            contrast_curve_file=contrast_curve_file, filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_DTP = res
                         j = 9
@@ -1269,19 +1270,20 @@ class target:
                                 + "probabilities for " + str(ID) + "."
                                 )
                         res, res_twin = lnZ_DEB(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            Bmag, Vmag,
-                            gmag, rmag, imag, zmag,
-                            Tmag, Jmag, Hmag, Kmag,
-                            trilegal_fname,
-                            contrast_curve_file, filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            Bmag=Bmag, Vmag=Vmag,
+                            gmag=gmag, rmag=rmag, imag=imag, zmag=zmag,
+                            Tmag=Tmag, Jmag=Jmag, Hmag=Hmag, Kmag=Kmag,
+                            trilegal_fname=trilegal_fname,
+                            contrast_curve_file=contrast_curve_file, filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_DEB = res
                         j = 10
@@ -1352,19 +1354,20 @@ class target:
                                 + "probability for " + str(ID) + "."
                                 )
 
-                        res = lnZ_BTP(time, flux, flux_err,
-                            P_orb, M_s, R_s, Teff,
-                            Bmag, Vmag, gmag,
-                            rmag, imag, zmag,
-                            Tmag, Jmag, Hmag, Kmag,
-                            trilegal_fname,
-                            contrast_curve_file, filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                        res = lnZ_BTP(time=time, flux=flux, sigma=flux_err,
+                            P_orb=P_orb, M_s=M_s, R_s=R_s, Teff=Teff,
+                            Bmag=Bmag, Vmag=Vmag,
+                            gmag=gmag, rmag=rmag, imag=imag, zmag=zmag,
+                            Tmag=Tmag, Jmag=Jmag, Hmag=Hmag, Kmag=Kmag,
+                            trilegal_fname=trilegal_fname,
+                            contrast_curve_file=contrast_curve_file, filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_BTP = res
                         j = 12
@@ -1413,19 +1416,20 @@ class target:
                                 )
 
                         res, res_twin = lnZ_BEB(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff,
-                            Bmag, Vmag,
-                            gmag, rmag, imag, zmag,
-                            Tmag, Jmag, Hmag, Kmag,
-                            trilegal_fname,
-                            contrast_curve_file, filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff,
+                            Bmag=Bmag, Vmag=Vmag,
+                            gmag=gmag, rmag=rmag, imag=imag, zmag=zmag,
+                            Tmag=Tmag, Jmag=Jmag, Hmag=Hmag, Kmag=Kmag,
+                            trilegal_fname=trilegal_fname,
+                            contrast_curve_file=contrast_curve_file, filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_BEB = res
                         j = 13
