@@ -629,8 +629,7 @@ class target:
                    verbose: int = 1, flatpriors: bool = False,
                    exptime: float = 0.00139, nsamples: int = 20,
                    molusc_file: str = None, external_lc_files: list = None,
-                   filt_lcs: list = None,
-                   lnz_const: int = 600, Z_star = 0.0):
+                   filt_lcs: list = None, lnz_const: int = 600, Z_star = 0.0):
 
         """Run to calculate FPP and NFPP.
 
@@ -665,7 +664,9 @@ class target:
             Z_star (float) = Metallicity of target star.
             external_lc_files (list[str]): List of paths to external light curves (up to 4).
             filt_lcs (list[str]): List of photometric filters for external light curves.
-                Options are TESS, g, r, i, z, J, H, and K.
+                Options are g, r, i, z, J, H, and K.
+            Z_star: metallicity of target star [dex].
+
         """
         # remove nans from light curve
         mask = ~np.isnan(time) & ~np.isnan(flux_0)
@@ -698,34 +699,39 @@ class target:
         best_fluxratio_comp = np.zeros(N_scenarios)
         best_fluxratio_EB_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
         best_fluxratio_comp_p = [np.zeros(N_scenarios) for i in range(num_external_lcs)] # for storing external lc info
-        best_M_comp = np.zeros(N_scenarios) # for all with dilution
-        best_R_comp = np.zeros(N_scenarios) # for all with dilution
-        #best_T_comp = np.zeros(N_scenarios) # for all with dilution
+        best_M_comp = np.zeros(N_scenarios) # for all scenarios with dilution
+        best_R_comp = np.zeros(N_scenarios) # for all scenarios with dilution
         lnZ = np.zeros(N_scenarios)
-        # if there are stars inside the external light curve aperture
+
+        # if there are TIC stars inside the aperture of the external light curve
         if (external_lc_files != None and len(filtered_stars["ID"].values) > 1):
+            # arg that triggers renormalization of external light curves
             renorm_external_lcs = True
+            # let's extract all the columns in the stars df that contain the keyword fluxratio
             filter_col = [col for col in filtered_stars if (col == 'ID' or col.startswith('fluxratio'))]
             # create a subset of the filtered stars dictionary
             # only contains the ID, and flux contribution of each star in each filter
+            # helpful for the lnZ functions later on
             external_fluxes_of_stars = filtered_stars[filter_col].reset_index(drop=True)
             print("renormalizing external light curves:", renorm_external_lcs)
         else:
             renorm_external_lcs = False
-            #external_fluxes_of_stars = None
 
 
+        # begin calculation of each scenario
         for i, ID in enumerate(filtered_stars["ID"].values):
-            # subtract flux from other stars in the aperture
+            # subtract flux from other stars in the TESS/Kepler/ K2 aperture
             flux, flux_err = renorm_flux(
                 flux_0, flux_err_0, filtered_stars["fluxratio"].values[i]
                 )
 
+            # from the df extract all of the flux ratios of the star that is being considered
             if renorm_external_lcs == True:
                 external_flux_of_star = external_fluxes_of_stars[external_fluxes_of_stars.ID == ID]
             else:
                 external_flux_of_star = None
 
+            # extract values from the stars dictionary
             M_s = filtered_stars["mass"].values[i]
             R_s = filtered_stars["rad"].values[i]
             Teff = filtered_stars["Teff"].values[i]
@@ -736,9 +742,9 @@ class target:
             Hmag = filtered_stars["Hmag"].values[i]
             Kmag = filtered_stars["Kmag"].values[i]
             gmag = filtered_stars["gmag"].values[i] # new
-            rmag = filtered_stars["gmag"].values[i] # new
-            imag = filtered_stars["gmag"].values[i] # new
-            zmag = filtered_stars["gmag"].values[i] # new
+            rmag = filtered_stars["rmag"].values[i] # new
+            imag = filtered_stars["imag"].values[i] # new
+            zmag = filtered_stars["zmag"].values[i] # new
             plx = filtered_stars["plx"].values[i]
             Z = Z_star # if known Z will get updated
             ra = filtered_stars["ra"].values[i]
@@ -788,14 +794,15 @@ class target:
                                 )
 
                         res = lnZ_TTP(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_TTP = res
                         j = 0
@@ -841,14 +848,15 @@ class target:
                                 )
 
                         res, res_twin = lnZ_TEB(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_TEB = res
                         j = 1
@@ -915,17 +923,18 @@ class target:
                                 )
 
                         res = lnZ_PTP(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            plx, contrast_curve_file,
-                            filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            molusc_file,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            plx=plx, contrast_curve_file=contrast_curve_file,
+                            filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            molusc_file=molusc_file,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_PTP = res
                         j = 3
@@ -973,17 +982,18 @@ class target:
                                 )
 
                         res, res_twin = lnZ_PEB(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            plx, contrast_curve_file,
-                            filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            molusc_file,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            plx=plx, contrast_curve_file=contrast_curve_file,
+                            filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            molusc_file=molusc_file,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_PEB = res
                         j = 4
@@ -1055,17 +1065,18 @@ class target:
                                 )
 
                         res = lnZ_STP(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            plx, contrast_curve_file,
-                            filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            molusc_file,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            plx=plx, contrast_curve_file=contrast_curve_file,
+                            filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            molusc_file=molusc_file,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_STP = res
                         j = 6
@@ -1114,17 +1125,18 @@ class target:
                                 )
 
                         res, res_twin = lnZ_SEB(
-                            time, flux, flux_err, P_orb,
-                            M_s, R_s, Teff, Z,
-                            plx, contrast_curve_file,
-                            filt,
-                            N, parallel, self.mission,
-                            flatpriors,
-                            exptime, nsamples,
-                            molusc_file,
-                            external_lc_files, filt_lcs,
-                            renorm_external_lcs, external_flux_of_star,
-                            lnz_const)
+                            time=time, flux=flux, sigma=flux_err, P_orb=P_orb,
+                            M_s=M_s, R_s=R_s, Teff=Teff, Z=Z,
+                            plx=plx, contrast_curve_file=contrast_curve_file,
+                            filt=filt,
+                            N=N, parallel=parallel, mission=self.mission,
+                            flatpriors=flatpriors,
+                            exptime=exptime, nsamples=nsamples,
+                            molusc_file=molusc_file,
+                            external_lc_files=external_lc_files, filt_lcs=filt_lcs,
+                            renorm_external_lcs=renorm_external_lcs,
+                            external_fluxes_of_stars=external_flux_of_star,
+                            lnz_const=lnz_const)
 
                         # self.res_SEB = res
                         j = 7
