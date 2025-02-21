@@ -179,8 +179,8 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -401,6 +401,8 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         & (ldc_Teffs == this_Teff)
         & (ldc_loggs == this_logg)
         )
+    # for printing out the properties of the star being eclipsed
+    print("Z, Teff, logg:", this_Z, this_Teff, this_logg)
     u1, u2 = ldc_u1s[mask], ldc_u2s[mask]
 
     external_lcs = []
@@ -408,8 +410,8 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -734,8 +736,8 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -979,8 +981,8 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -1398,19 +1400,23 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
     rounded_Teffs_comp[rounded_Teffs_comp > 10000] = 10000
     u1s_comp, u2s_comp = np.zeros(N), np.zeros(N)
 
+    ldcs_mask = []
     for i, (comp_Teff, comp_logg) in enumerate(
             zip(rounded_Teffs_comp, rounded_loggs_comp)
             ):
         mask = (Teffs_at_Z == comp_Teff) & (loggs_at_Z == comp_logg)
         u1s_comp[i], u2s_comp[i] = u1s_at_Z[mask], u2s_at_Z[mask]
+        ldcs_mask.append(mask)
+
+    ldcs_mask = np.array(ldcs_mask)
 
     external_lcs = []
     if external_lc_files and filt_lcs:
         parallel = True
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -1592,6 +1598,11 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
         'lnZ': lnZ
     }
 
+    # add the ldcs mask
+    #print(ldcs_mask[idx])
+    res['idx'] = idx
+    res['u_mask'] = ldcs_mask
+
     # Add results for each external light curve
     for i, ext_lc in enumerate(external_lcs):
         res[f'u1_p{i+1}'] = ext_lc['u1s_comp'][idx]
@@ -1739,8 +1750,8 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -2171,8 +2182,8 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -2512,8 +2523,8 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -2941,8 +2952,8 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {
@@ -3319,8 +3330,8 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
         parallel = True  # Force parallel execution when external LCs are provided
         if len(external_lc_files) != len(filt_lcs):
             raise ValueError("Number of external LC files must match number of filters")
-        if len(external_lc_files) > 4:
-            raise ValueError("Maximum of 4 external light curves supported")
+        if len(external_lc_files) > 7:
+            raise ValueError("Maximum of 7 external light curves supported")
 
         for lc_file, filt_lc in zip(external_lc_files, filt_lcs):
             ldc_map = {

@@ -750,6 +750,8 @@ class target:
             ra = filtered_stars["ra"].values[i]
             dec = filtered_stars["dec"].values[i]
 
+            print("griz mags:", gmag, rmag, imag, zmag)
+
             # get url to TRILEGAL results and save
             if self.trilegal_fname is None:
                 output_url = self.trilegal_url
@@ -858,7 +860,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_TEB = res
+                        self.res_TEB = res
                         j = 1
                         targets[j] = ID
                         star_num[j] = 1
@@ -883,7 +885,7 @@ class target:
                             best_u2_p[i][j] = res[f'u2_p{i+1}'][0]
                             best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
 
-                        # self.res_TEBx2P = res_twin
+                        self.res_TEBx2P = res_twin
                         j = 2
                         targets[j] = ID
                         star_num[j] = 1
@@ -936,7 +938,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_PTP = res
+                        self.res_PTP = res
                         j = 3
                         targets[j] = ID
                         star_num[j] = 1
@@ -995,7 +997,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_PEB = res
+                        self.res_PEB = res
                         j = 4
                         targets[j] = ID
                         star_num[j] = 1
@@ -1023,7 +1025,7 @@ class target:
                             best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
                             best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
 
-                        # self.res_PEBx2P = res_twin
+                        self.res_PEBx2P = res_twin
                         j = 5
                         targets[j] = ID
                         star_num[j] = 1
@@ -1078,7 +1080,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_STP = res
+                        self.res_STP = res
                         j = 6
                         targets[j] = ID
                         star_num[j] = 2
@@ -1285,7 +1287,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_DEB = res
+                        self.res_DEB = res
                         j = 10
                         targets[j] = ID
                         star_num[j] = 1
@@ -1313,7 +1315,7 @@ class target:
                             best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
                             best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
 
-                        # self.res_DEBx2P = res_twin
+                        self.res_DEBx2P = res_twin
                         j = 11
                         targets[j] = ID
                         star_num[j] = 1
@@ -1460,7 +1462,7 @@ class target:
                             best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
 
 
-                        # self.res_BEBx2P = res_twin
+                        self.res_BEBx2P = res_twin
                         j = 14
                         targets[j] = ID
                         star_num[j] = 2
