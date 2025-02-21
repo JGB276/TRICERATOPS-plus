@@ -8,7 +8,7 @@ To install TRICERATOPS v2, follow these steps:
 
 1. Download the repository:
    ```bash
-   git clone https://github.com/username/TRICERATOPS_v2.git
+   git clone https://github.com/JGB276/TRICERATOPS_v2.git
    ```
 
 2. Navigate to the main directory:
