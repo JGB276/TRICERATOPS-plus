@@ -20,23 +20,3 @@ To install TRICERATOPS v2, follow these steps:
    ```bash
    pip install .
    ```
-
-## About
-
-[Add a brief description of what TRICERATOPS does, its main features, and its purpose]
-
-## Usage
-
-[Add basic usage instructions and examples]
-
-## Requirements
-
-[Add any dependencies or system requirements]
-
-## License
-
-[Add license information]
-
-## Contact
-
-[Add contact information for maintainers]
