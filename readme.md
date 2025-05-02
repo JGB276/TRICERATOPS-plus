@@ -53,3 +53,7 @@ The `filt_lcs` argument accepts the following photometric filter designations:
 - `"J"` - NIR J-band
 - `"H"` - NIR H-band
 - `"K"` - NIR K-band
+
+## Tutorials
+
+Check out in the "examples" folder TOI4155_01_example.ipynb and TOI4051_01_example.ipynb, which demonstrate how to use TRICERATOPS+
