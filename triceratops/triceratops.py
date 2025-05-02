@@ -629,7 +629,7 @@ class target:
                    verbose: int = 1, flatpriors: bool = False,
                    exptime: float = 0.00139, nsamples: int = 20,
                    molusc_file: str = None, external_lc_files: list = None,
-                   filt_lcs: list = None, lnz_const: int = 600, Z_star = 0.0):
+                   filt_lcs: list = None, lnz_const: int = 650, Z_star = 0.0):
 
         """Run to calculate FPP and NFPP.
 

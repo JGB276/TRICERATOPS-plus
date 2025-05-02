@@ -111,7 +111,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the TTP scenario.
     Now supports up to four external light curves with different filters.
@@ -340,7 +340,7 @@ def lnZ_TEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None, filt_lcs: list = None,
             renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the TEB scenario.
     Now supports up to four external light curves with different filters.
@@ -680,7 +680,7 @@ def lnZ_PTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             molusc_file: str = None, external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the PTP scenario.
     Now supports up to four external light curves with different filters.
@@ -922,7 +922,7 @@ def lnZ_PEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             molusc_file: str = None, external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the PEB scenario.
     Now supports multiple external light curves with different filters.
@@ -1302,7 +1302,7 @@ def lnZ_STP(time: np.ndarray, flux: np.ndarray, sigma: float,
             molusc_file: str = None, external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the STP scenario.
     Now supports multiple external light curves with different filters.
@@ -1623,7 +1623,7 @@ def lnZ_SEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             molusc_file: str = None, external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the SEB scenario.
     Args:
@@ -2067,7 +2067,7 @@ def lnZ_DTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the DTP scenario.
     Now supports up to four external light curves with different filters.
@@ -2391,7 +2391,7 @@ def lnZ_DEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the DEB scenario.
     Now supports up to four external light curves with different filters.
@@ -2832,7 +2832,7 @@ def lnZ_BTP(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the BTP scenario.
     Now supports up to four external light curves with different filters.
@@ -3167,7 +3167,7 @@ def lnZ_BEB(time: np.ndarray, flux: np.ndarray, sigma: float,
             external_lc_files: list = None,
             filt_lcs: list = None, renorm_external_lcs: bool = False,
             external_fluxes_of_stars: dict = None,
-            lnz_const: int = 600):
+            lnz_const: int = 650):
     """
     Calculates the marginal likelihood of the BEB scenario.
     Now supports up to four external light curves with different filters.
