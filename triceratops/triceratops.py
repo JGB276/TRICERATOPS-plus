@@ -806,7 +806,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_TTP = res
+                        self.res_TTP = res
                         j = 0
                         targets[j] = ID
                         star_num[j] = 1
@@ -1140,7 +1140,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_SEB = res
+                        self.res_SEB = res
                         j = 7
                         targets[j] = ID
                         star_num[j] = 2
@@ -1168,7 +1168,7 @@ class target:
                             best_fluxratio_EB_p[i][j] = res[f'fluxratio_EB_p{i+1}'][0]
                             best_fluxratio_comp_p[i][j] = res[f'fluxratio_comp_p{i+1}'][0]
 
-                        # self.res_SEBx2P = res_twin
+                        self.res_SEBx2P = res_twin
                         j = 8
                         targets[j] = ID
                         star_num[j] = 2
@@ -1226,7 +1226,7 @@ class target:
                             external_fluxes_of_stars=external_flux_of_star,
                             lnz_const=lnz_const)
 
-                        # self.res_DTP = res
+                        self.res_DTP = res
                         j = 9
                         targets[j] = ID
                         star_num[j] = 1

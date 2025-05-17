@@ -95,7 +95,7 @@ ldc_iband_loggs = np.array(ldc_iband.logg, dtype=float)
 ldc_iband_u1s = np.array(ldc_iband.aLSM, dtype=float)
 ldc_iband_u2s = np.array(ldc_iband.bLSM, dtype=float)
 
-LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_g.csv')
+LDC_FILE = resource_filename('triceratops', 'data/ldc_sdss_z.csv')
 ldc_zband = read_csv(LDC_FILE)
 ldc_zband_Zs = np.array(ldc_zband.Z, dtype=float)
 ldc_zband_Teffs = np.array(ldc_zband.Teff, dtype=int)
@@ -192,7 +192,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 "i": (ldc_iband_Zs, ldc_iband_Teffs, ldc_iband_loggs, ldc_iband_u1s, ldc_iband_u2s),
                 "z": (ldc_zband_Zs, ldc_zband_Teffs, ldc_zband_loggs, ldc_zband_u1s, ldc_zband_u2s),
             }
-
+            #print("limb darkening filter:", filt_lc)
             ldc_P_Zs, ldc_P_Teffs, ldc_P_loggs, ldc_P_u1s, ldc_P_u2s = ldc_map[filt_lc]
 
             this_Z_p = ldc_P_Zs[np.argmin(np.abs(ldc_P_Zs-Z))]
@@ -204,6 +204,7 @@ def lnZ_TTP(time: np.ndarray, flux: np.ndarray, sigma: float,
                 & (ldc_P_loggs == this_logg_p)
             )
             u1_p, u2_p = ldc_P_u1s[mask_p], ldc_P_u2s[mask_p]
+            #print("limb darkening coeffs:", u1_p, u2_p)
 
             external_lc = np.loadtxt(lc_file)
             time_p, flux_p, fluxerr_p = external_lc[:,0], external_lc[:,1], external_lc[:,2]
